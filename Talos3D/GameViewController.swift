@@ -37,7 +37,7 @@ class GameViewController: NSViewController
 
         mtkView.device = defaultDevice
 
-        guard let newRenderer = Renderer(metalKitView: mtkView) else {
+        guard let newRenderer = Renderer(mtkView: mtkView) else {
             SimpleLogs.ERROR("Renderer cannot be initialized")
             return
         }
@@ -49,10 +49,16 @@ class GameViewController: NSViewController
         mtkView.delegate = renderer
     }
 
+    override func scrollWheel(with event: NSEvent)
+    {
+        renderer.onScroll(scroll: Float(event.scrollingDeltaY))
+    }
+
     override func mouseDragged(with event: NSEvent)
     {
-        SimpleLogs.INFO("DRAG")
-        // TODO: renderer.onMouseDrag()
+        let x = Float(event.deltaX)
+        let y = Float(event.deltaY)
+        renderer.onMouseDrag(deltaX: x, deltaY: y)
     }
 
     override func keyDown(with event: NSEvent)
