@@ -30,9 +30,10 @@ public class Renderer: NSObject, MTKViewDelegate
     private let mPipelineState: MTLRenderPipelineState
     private var mDepthStencilState: MTLDepthStencilState?
 
+    private var mCameraMoveSpeed:       Float
     private var mCameraMoveSensitivity: Float
     private var mCameraZoomSensitivity: Float
-    private var mCameraPos: Vector3
+    private var mCameraPos:             Vector3
 
     private var mModel:         Model?
     // TODO: Load textures on demand
@@ -98,9 +99,10 @@ public class Renderer: NSObject, MTKViewDelegate
         mDepthStencilState = mView.device?.makeDepthStencilState(descriptor: depthStencilDesc)
 
         // TODO: Extract initCamera()
+        mCameraMoveSpeed       = 0.01
         mCameraMoveSensitivity = 0.005
         mCameraZoomSensitivity = 0.01
-        mCameraPos = Vector3.zero()
+        mCameraPos             = Vector3(x:0, y:0, z:-0.5)
 
         super.init()
 
@@ -122,8 +124,38 @@ public class Renderer: NSObject, MTKViewDelegate
 
     public func onScroll(scroll: Float)
     {
-        mCameraPos.z += scroll * mCameraZoomSensitivity
+        mCameraPos.z += scroll * mCameraMoveSpeed
         // SimpleLogs.INFO("New pos: " + mCameraPos.description)
+    }
+
+    public func onKeyPress(keyCode: UInt16)
+    {
+        switch keyCode
+        {
+            case 0:
+//                SimpleLogs.INFO("A")
+                mCameraPos.x -= mCameraMoveSpeed
+                break
+
+            case 0x02:
+//                SimpleLogs.INFO("D")
+                mCameraPos.x += mCameraMoveSpeed
+                break
+
+            case 0x01:
+//                SimpleLogs.INFO("S")
+                mCameraPos.z -= mCameraZoomSensitivity
+                break
+
+            case 0x0D:
+//                SimpleLogs.INFO("W")
+                mCameraPos.z += mCameraZoomSensitivity
+                break
+
+            default:
+//                SimpleLogs.INFO("Unsupported key")
+                break
+        }
     }
 
     public func draw(in view: MTKView) { self.update() }

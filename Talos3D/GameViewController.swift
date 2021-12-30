@@ -63,7 +63,6 @@ class GameViewController: NSViewController
 
     override func keyDown(with event: NSEvent)
     {
-        SimpleLogs.INFO("DOWN")
-        // TODO: renderer.onKeyDown()
+        renderer.onKeyPress(keyCode: event.keyCode)
     }
 }
