@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "SimpleLogs",
+        "repositoryURL": "https://github.com/javiersalcedopuyo/SimpleLogsSwift",
+        "state": {
+          "branch": "main",
+          "revision": "4fdd2fef5ad58b80c553d3444b6ea277e153829c",
+          "version": null
+        }
+      },
+      {
+        "package": "SLA",
+        "repositoryURL": "https://github.com/javiersalcedopuyo/SLA",
+        "state": {
+          "branch": "main",
+          "revision": "26d20f479879bb525bfebd1a1a98142f0f8b6fa3",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}

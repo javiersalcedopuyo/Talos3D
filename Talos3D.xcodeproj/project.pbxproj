@@ -13,6 +13,8 @@
 		859CEA2D277DE361001D07B7 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 859CEA2C277DE361001D07B7 /* Shaders.metal */; };
 		859CEA30277DE362001D07B7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 859CEA2F277DE362001D07B7 /* Assets.xcassets */; };
 		859CEA33277DE362001D07B7 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 859CEA31277DE362001D07B7 /* Main.storyboard */; };
+		859CEA40277DE942001D07B7 /* SLA in Frameworks */ = {isa = PBXBuildFile; productRef = 859CEA3F277DE942001D07B7 /* SLA */; };
+		859CEA43277DE970001D07B7 /* SimpleLogs in Frameworks */ = {isa = PBXBuildFile; productRef = 859CEA42277DE970001D07B7 /* SimpleLogs */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +34,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				859CEA40277DE942001D07B7 /* SLA in Frameworks */,
+				859CEA43277DE970001D07B7 /* SimpleLogs in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,16 +61,24 @@
 		859CEA25277DE361001D07B7 /* Talos3D */ = {
 			isa = PBXGroup;
 			children = (
+				859CEA3A277DE36E001D07B7 /* Shaders */,
 				859CEA26277DE361001D07B7 /* AppDelegate.swift */,
 				859CEA28277DE361001D07B7 /* GameViewController.swift */,
 				859CEA2A277DE361001D07B7 /* Renderer.swift */,
-				859CEA2C277DE361001D07B7 /* Shaders.metal */,
-				859CEA2E277DE361001D07B7 /* ShaderTypes.h */,
 				859CEA2F277DE362001D07B7 /* Assets.xcassets */,
 				859CEA31277DE362001D07B7 /* Main.storyboard */,
 				859CEA34277DE362001D07B7 /* Talos3D.entitlements */,
 			);
 			path = Talos3D;
+			sourceTree = "<group>";
+		};
+		859CEA3A277DE36E001D07B7 /* Shaders */ = {
+			isa = PBXGroup;
+			children = (
+				859CEA2E277DE361001D07B7 /* ShaderTypes.h */,
+				859CEA2C277DE361001D07B7 /* Shaders.metal */,
+			);
+			path = Shaders;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -85,6 +97,10 @@
 			dependencies = (
 			);
 			name = Talos3D;
+			packageProductDependencies = (
+				859CEA3F277DE942001D07B7 /* SLA */,
+				859CEA42277DE970001D07B7 /* SimpleLogs */,
+			);
 			productName = Talos3D;
 			productReference = 859CEA23277DE361001D07B7 /* Talos3D.app */;
 			productType = "com.apple.product-type.application";
@@ -113,6 +129,10 @@
 				Base,
 			);
 			mainGroup = 859CEA1A277DE361001D07B7;
+			packageReferences = (
+				859CEA3E277DE942001D07B7 /* XCRemoteSwiftPackageReference "SLA" */,
+				859CEA41277DE970001D07B7 /* XCRemoteSwiftPackageReference "SimpleLogsSwift" */,
+			);
 			productRefGroup = 859CEA24277DE361001D07B7 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -296,7 +316,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = JavierSalcedo.Talos3D;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "$(TARGET_NAME)/ShaderTypes.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "$(TARGET_NAME)/Shaders/ShaderTypes.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -322,7 +342,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = JavierSalcedo.Talos3D;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "$(TARGET_NAME)/ShaderTypes.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "$(TARGET_NAME)/Shaders/ShaderTypes.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -349,6 +369,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		859CEA3E277DE942001D07B7 /* XCRemoteSwiftPackageReference "SLA" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/javiersalcedopuyo/SLA";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+		859CEA41277DE970001D07B7 /* XCRemoteSwiftPackageReference "SimpleLogsSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/javiersalcedopuyo/SimpleLogsSwift";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		859CEA3F277DE942001D07B7 /* SLA */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 859CEA3E277DE942001D07B7 /* XCRemoteSwiftPackageReference "SLA" */;
+			productName = SLA;
+		};
+		859CEA42277DE970001D07B7 /* SimpleLogs */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 859CEA41277DE970001D07B7 /* XCRemoteSwiftPackageReference "SimpleLogsSwift" */;
+			productName = SimpleLogs;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 859CEA1B277DE361001D07B7 /* Project object */;
 }

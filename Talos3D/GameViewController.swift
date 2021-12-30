@@ -8,9 +8,16 @@
 import Cocoa
 import MetalKit
 
-// Our macOS specific view controller
-class GameViewController: NSViewController {
+import SimpleLogs
 
+public extension MTKView
+{
+    override var acceptsFirstResponder: Bool { return true } // Enables keyboard events
+}
+
+// Our macOS specific view controller
+class GameViewController: NSViewController
+{
     var renderer: Renderer!
     var mtkView: MTKView!
 
@@ -18,20 +25,20 @@ class GameViewController: NSViewController {
         super.viewDidLoad()
 
         guard let mtkView = self.view as? MTKView else {
-            print("View attached to GameViewController is not an MTKView")
+            SimpleLogs.ERROR("View attached to GameViewController is not an MTKView")
             return
         }
 
         // Select the device to render with.  We choose the default device
         guard let defaultDevice = MTLCreateSystemDefaultDevice() else {
-            print("Metal is not supported on this device")
+            SimpleLogs.ERROR("Metal is not supported on this device")
             return
         }
 
         mtkView.device = defaultDevice
 
         guard let newRenderer = Renderer(metalKitView: mtkView) else {
-            print("Renderer cannot be initialized")
+            SimpleLogs.ERROR("Renderer cannot be initialized")
             return
         }
 
@@ -40,5 +47,17 @@ class GameViewController: NSViewController {
         renderer.mtkView(mtkView, drawableSizeWillChange: mtkView.drawableSize)
 
         mtkView.delegate = renderer
+    }
+
+    override func mouseDragged(with event: NSEvent)
+    {
+        SimpleLogs.INFO("DRAG")
+        // TODO: renderer.onMouseDrag()
+    }
+
+    override func keyDown(with event: NSEvent)
+    {
+        SimpleLogs.INFO("DOWN")
+        // TODO: renderer.onKeyDown()
     }
 }
