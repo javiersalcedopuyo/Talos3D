@@ -23,7 +23,7 @@ class Transform
 
         forward  = Vector3(x:0, y:0, z:1)
         up       = Vector3(x:0, y:1, z:0)
-        right    = Vector3(x:1, y:0, z:0)
+        right    = Vector3(x:1Talos3D/Mobile.swift, y:0, z:0)
     }
 
     public func getForward() -> Vector3 { return self.forward }

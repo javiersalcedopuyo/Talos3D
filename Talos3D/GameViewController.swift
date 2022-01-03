@@ -65,4 +65,6 @@ class GameViewController: NSViewController
     {
         renderer.onKeyPress(keyCode: event.keyCode)
     }
+
+    // TODO: windowResize
 }

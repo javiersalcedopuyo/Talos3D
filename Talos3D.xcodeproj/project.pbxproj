@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		853291D6278370CE00DE4B93 /* Camera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853291D5278370CE00DE4B93 /* Camera.swift */; };
+		853291D8278376D300DE4B93 /* Mobile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853291D7278376D300DE4B93 /* Mobile.swift */; };
+		857EFDF62780B679009800F2 /* Positionable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 857EFDF52780B679009800F2 /* Positionable.swift */; };
+		858B9D1B278274730023850F /* Transform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 858B9D1A278274730023850F /* Transform.swift */; };
 		859CEA27277DE361001D07B7 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 859CEA26277DE361001D07B7 /* AppDelegate.swift */; };
 		859CEA29277DE361001D07B7 /* GameViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 859CEA28277DE361001D07B7 /* GameViewController.swift */; };
 		859CEA2B277DE361001D07B7 /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 859CEA2A277DE361001D07B7 /* Renderer.swift */; };
@@ -22,6 +26,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		853291D5278370CE00DE4B93 /* Camera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Camera.swift; sourceTree = "<group>"; };
+		853291D7278376D300DE4B93 /* Mobile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mobile.swift; sourceTree = "<group>"; };
+		857EFDF52780B679009800F2 /* Positionable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Positionable.swift; sourceTree = "<group>"; };
+		858B9D1A278274730023850F /* Transform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transform.swift; sourceTree = "<group>"; };
 		859CEA23277DE361001D07B7 /* Talos3D.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Talos3D.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		859CEA26277DE361001D07B7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		859CEA28277DE361001D07B7 /* GameViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameViewController.swift; sourceTree = "<group>"; };
@@ -74,6 +82,10 @@
 				859CEA26277DE361001D07B7 /* AppDelegate.swift */,
 				859CEA28277DE361001D07B7 /* GameViewController.swift */,
 				859CEA2A277DE361001D07B7 /* Renderer.swift */,
+				853291D5278370CE00DE4B93 /* Camera.swift */,
+				857EFDF52780B679009800F2 /* Positionable.swift */,
+				853291D7278376D300DE4B93 /* Mobile.swift */,
+				858B9D1A278274730023850F /* Transform.swift */,
 				859CEA48277E4763001D07B7 /* Model.swift */,
 				859CEA46277E46E5001D07B7 /* UBO.swift */,
 				859CEA2F277DE362001D07B7 /* Assets.xcassets */,
@@ -186,6 +198,10 @@
 				859CEA47277E46E5001D07B7 /* UBO.swift in Sources */,
 				859CEA29277DE361001D07B7 /* GameViewController.swift in Sources */,
 				859CEA2B277DE361001D07B7 /* Renderer.swift in Sources */,
+				853291D8278376D300DE4B93 /* Mobile.swift in Sources */,
+				853291D6278370CE00DE4B93 /* Camera.swift in Sources */,
+				857EFDF62780B679009800F2 /* Positionable.swift in Sources */,
+				858B9D1B278274730023850F /* Transform.swift in Sources */,
 				859CEA27277DE361001D07B7 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

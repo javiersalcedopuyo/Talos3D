@@ -30,10 +30,7 @@ public class Renderer: NSObject, MTKViewDelegate
     private let mPipelineState: MTLRenderPipelineState
     private var mDepthStencilState: MTLDepthStencilState?
 
-    private var mCameraMoveSpeed:       Float
-    private var mCameraMoveSensitivity: Float
-    private var mCameraZoomSensitivity: Float
-    private var mCameraPos:             Vector3
+    private var mCamera: Camera!
 
     private var mModel:         Model?
     // TODO: Load textures on demand
@@ -98,13 +95,11 @@ public class Renderer: NSObject, MTKViewDelegate
 
         mDepthStencilState = mView.device?.makeDepthStencilState(descriptor: depthStencilDesc)
 
-        // TODO: Extract initCamera()
-        mCameraMoveSpeed       = 0.01
-        mCameraMoveSensitivity = 0.005
-        mCameraZoomSensitivity = 0.01
-        mCameraPos             = Vector3(x:0, y:0, z:-0.5)
+        mCamera = Camera()
 
         super.init()
+
+        self.onResize(newSize: mtkView.frame.size)
 
         self.loadTextures()
         self.buildSamplerState()
@@ -117,45 +112,52 @@ public class Renderer: NSObject, MTKViewDelegate
     public func onMouseDrag(deltaX: Float, deltaY: Float)
     {
         // TODO: Make it rotate instead
-        mCameraPos.x -= deltaX * mCameraMoveSensitivity
-        mCameraPos.y += deltaY * mCameraMoveSensitivity
-        // SimpleLogs.INFO("New pos: " + mCameraPos.description)
+        let d = Vector3(x: -deltaX, y: deltaY, z: 0)
+        mCamera.move(direction: d)
     }
 
     public func onScroll(scroll: Float)
     {
-        mCameraPos.z += scroll * mCameraMoveSpeed
-        // SimpleLogs.INFO("New pos: " + mCameraPos.description)
+        let d = Vector3(x: 0, y: 0, z: scroll)
+        mCamera.move(direction: d)
     }
 
     public func onKeyPress(keyCode: UInt16)
     {
+        var d = Vector3.zero()
         switch keyCode
         {
             case 0:
 //                SimpleLogs.INFO("A")
-                mCameraPos.x -= mCameraMoveSpeed
+                d.x = -1
                 break
 
             case 0x02:
 //                SimpleLogs.INFO("D")
-                mCameraPos.x += mCameraMoveSpeed
+                d.x = 1
                 break
 
             case 0x01:
 //                SimpleLogs.INFO("S")
-                mCameraPos.z -= mCameraZoomSensitivity
+                d.z = -1
                 break
 
             case 0x0D:
 //                SimpleLogs.INFO("W")
-                mCameraPos.z += mCameraZoomSensitivity
+                d.z = 1
                 break
 
             default:
 //                SimpleLogs.INFO("Unsupported key")
                 break
         }
+        mCamera.move(direction: d)
+    }
+
+    public func onResize(newSize: CGSize)
+    {
+        let newAspectRatio = Float(newSize.width / newSize.height)
+        mCamera.updateAspectRatio(newAspectRatio)
     }
 
     public func draw(in view: MTKView) { self.update() }
@@ -177,14 +179,9 @@ public class Renderer: NSObject, MTKViewDelegate
         ubo.model = ubo.model * Matrix4x4.makeRotation(radians: TAU * 0.5, axis: Vector4(x: 0, y: 1, z: 0, w:0))
 
         // TODO: Use Constant Buffer?
-        ubo.view  = Matrix4x4.lookAtLH(eye:    mCameraPos,
-                                       target: mCameraPos + Vector3(x:0, y:0, z:1),
-                                       upAxis: WORLD_UP)
-
-        ubo.proj  = Matrix4x4.perspectiveLH(fovy: SLA.deg2rad(45.0),
-                                            aspectRatio: Float(mView.frame.width / mView.frame.height),
-                                            near: 0.1,
-                                            far: 1000.0)
+        self.onResize(newSize: mView.frame.size) // TODO: Do only on window resize
+        ubo.view  = mCamera.getView()
+        ubo.proj  = mCamera.getProjection()
 
         let uniformsSize  = ubo.size()
         let uniformBuffer = mView.device?.makeBuffer(bytes: ubo.asArray(),
