@@ -96,6 +96,7 @@ public class Renderer: NSObject, MTKViewDelegate
         mDepthStencilState = mView.device?.makeDepthStencilState(descriptor: depthStencilDesc)
 
         mCamera = Camera()
+        mCamera.move(to: Vector3(x:0, y:0.1, z:-0.5))
 
         super.init()
 
@@ -113,9 +114,8 @@ public class Renderer: NSObject, MTKViewDelegate
 
     public func onMouseDrag(deltaX: Float, deltaY: Float)
     {
-        // TODO: Make it rotate instead
-        let d = Vector3(x: -deltaX, y: deltaY, z: 0)
-        mCamera.move(direction: d)
+        let d = Vector3(x: -deltaY, y: deltaX, z: 0)
+        mCamera.rotate(eulerAngles: d)
     }
 
     public func onScroll(scroll: Float)

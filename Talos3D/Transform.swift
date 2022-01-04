@@ -35,7 +35,25 @@ class Transform
 
     public func move(to: Vector3) { self.position = to }
 
-    // TODO: public func rotate(eulerAngles: Vector3)
+    public func rotate(eulerAngles: Vector3)
+    {
+        // Tilt
+        let rotX = Matrix3x3.makeRotation(radians: SLA.deg2rad(eulerAngles.x),
+                                          axis:    self.right)
+        // Pan
+        let rotY = Matrix3x3.makeRotation(radians: SLA.deg2rad(eulerAngles.y),
+                                          axis:    self.up)
+        // Roll
+        let rotZ = Matrix3x3.makeRotation(radians: SLA.deg2rad(eulerAngles.z),
+                                          axis:    self.forward)
+
+        // I'm using Z -> Y -> X to avoid gimball lock, since we are probably not rolling often
+        let R = rotX * rotY * rotZ
+
+        self.forward = (R * self.forward).normalized() // Is it really necessary to normalize?
+        self.right   = self.forward.cross( Vector3(x:0, y:1, z:0) )
+        self.up      = self.right.cross( self.forward )
+    }
     // TODO: public func rotate(q: Quaterion)
     // TODO: public func lookAt(target: Vector3)
 

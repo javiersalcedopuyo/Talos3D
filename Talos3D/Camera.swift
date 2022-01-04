@@ -52,9 +52,8 @@ class Camera: Mobile
 
     public func rotate(eulerAngles: Vector3)
     {
-        // TODO:
-        SimpleLogs.WARNING("UNIMPLEMENTED")
-        // self.updateView()
+        self.transform.rotate(eulerAngles: eulerAngles)
+        self.updateView()
     }
 
     public func updateAspectRatio(_ a: Float)   { self.aspectRatio = a; self.updateProjection() }

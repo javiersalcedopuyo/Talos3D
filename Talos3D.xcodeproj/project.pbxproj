@@ -79,12 +79,11 @@
 			children = (
 				859CEA4C277E4B5F001D07B7 /* Models */,
 				859CEA3A277DE36E001D07B7 /* Shaders */,
+				85E3F8122784A5700028661A /* Protocols */,
 				859CEA26277DE361001D07B7 /* AppDelegate.swift */,
 				859CEA28277DE361001D07B7 /* GameViewController.swift */,
 				859CEA2A277DE361001D07B7 /* Renderer.swift */,
 				853291D5278370CE00DE4B93 /* Camera.swift */,
-				857EFDF52780B679009800F2 /* Positionable.swift */,
-				853291D7278376D300DE4B93 /* Mobile.swift */,
 				858B9D1A278274730023850F /* Transform.swift */,
 				859CEA48277E4763001D07B7 /* Model.swift */,
 				859CEA46277E46E5001D07B7 /* UBO.swift */,
@@ -111,6 +110,15 @@
 				859CEA4D277E4B63001D07B7 /* bunny.obj */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		85E3F8122784A5700028661A /* Protocols */ = {
+			isa = PBXGroup;
+			children = (
+				853291D7278376D300DE4B93 /* Mobile.swift */,
+				857EFDF52780B679009800F2 /* Positionable.swift */,
+			);
+			path = Protocols;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
