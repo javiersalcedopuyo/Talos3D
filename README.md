@@ -8,7 +8,7 @@ A Metal toy engine written on Swift with the intention of learning Metal and imp
 ## Planned "stepping-stone" features
 - [x] Importing of .obj files
 - [ ] Blinn-Phong lighting model
-- [ ] FPS camera
+- [x] FPS camera
 - [ ] Forward rendering
 - [ ] Simple shadow maps
 
