@@ -121,7 +121,7 @@ public class Renderer: NSObject, MTKViewDelegate
     public func onScroll(scroll: Float)
     {
         let d = Vector3(x: 0, y: 0, z: scroll)
-        mCamera.move(direction: d)
+        mCamera.move(localDirection: d)
     }
 
     public func onKeyPress(keyCode: UInt16)
@@ -153,7 +153,7 @@ public class Renderer: NSObject, MTKViewDelegate
 //                SimpleLogs.INFO("Unsupported key")
                 break
         }
-        mCamera.move(direction: d)
+        mCamera.move(localDirection: d)
     }
 
     public func draw(in view: MTKView) { self.update() }

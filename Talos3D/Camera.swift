@@ -35,9 +35,10 @@ class Camera: Mobile
     public func getView()       -> Matrix4x4 { return self.view }
     public func getProjection() -> Matrix4x4 { return self.projection }
 
-    public func move(direction: Vector3)
+    public func move(localDirection: Vector3)
     {
-        self.transform.position += direction * self.moveSpeed
+        let worldDirection = self.transform.getLocalToWorldMatrix() * Vector4(localDirection, 0)
+        self.transform.position += worldDirection.xyz() * self.moveSpeed
         self.updateView()
     }
 
