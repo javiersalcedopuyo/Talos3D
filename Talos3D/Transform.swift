@@ -18,8 +18,9 @@ class Transform
 
     public init()
     {
-        position = Vector3.zero()
-        scale    = Vector3.identity()
+        position    = Vector3.zero()
+        scale       = Vector3.identity()
+        eulerAngles = Vector3.zero()
 
         right    = Vector3(x:1, y:0, z:0)
         up       = Vector3(x:0, y:1, z:0)
@@ -42,7 +43,7 @@ class Transform
 
     // TODO: public func getWorldToLocaldMatrix() -> Matrix4x4
 
-    // TODO: public func getEulerAngles() -> Vector3 { return self.eulerAngles }
+    public func getEulerAngles() -> Vector3 { return self.eulerAngles }
     // TODO: public func getRotationQuaternion() -> Quaternion { return self.rotQuaternion }
 
     public func move(to: Vector3) { self.position = to }
@@ -74,6 +75,6 @@ class Transform
     private var up:       Vector3
     private var right:    Vector3
 
-    // TODO: private var eulerAngles: Vector3
+    private var eulerAngles: Vector3
     // TODO: private var rotQuaternion: Quaternion
 }
