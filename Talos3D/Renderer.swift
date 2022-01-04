@@ -99,15 +99,17 @@ public class Renderer: NSObject, MTKViewDelegate
 
         super.init()
 
-        self.onResize(newSize: mtkView.frame.size)
-
         self.loadTextures()
         self.buildSamplerState()
 
         mView.delegate = self
     }
 
-    public func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) { /* TODO: */ }
+    public func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize)
+    {
+        let newAspectRatio = Float(size.width / size.height)
+        mCamera.updateAspectRatio(newAspectRatio)
+    }
 
     public func onMouseDrag(deltaX: Float, deltaY: Float)
     {
@@ -154,12 +156,6 @@ public class Renderer: NSObject, MTKViewDelegate
         mCamera.move(direction: d)
     }
 
-    public func onResize(newSize: CGSize)
-    {
-        let newAspectRatio = Float(newSize.width / newSize.height)
-        mCamera.updateAspectRatio(newAspectRatio)
-    }
-
     public func draw(in view: MTKView) { self.update() }
 
     func update()
@@ -179,7 +175,6 @@ public class Renderer: NSObject, MTKViewDelegate
         ubo.model = ubo.model * Matrix4x4.makeRotation(radians: TAU * 0.5, axis: Vector4(x: 0, y: 1, z: 0, w:0))
 
         // TODO: Use Constant Buffer?
-        self.onResize(newSize: mView.frame.size) // TODO: Do only on window resize
         ubo.view  = mCamera.getView()
         ubo.proj  = mCamera.getProjection()
 
