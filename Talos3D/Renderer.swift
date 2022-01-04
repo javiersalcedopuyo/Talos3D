@@ -49,6 +49,7 @@ public class Renderer: NSObject, MTKViewDelegate
         mView = mtkView
         mView.depthStencilPixelFormat = MTLPixelFormat.depth16Unorm
         mView.clearDepth              = 1.0
+        mView.clearColor              = MTLClearColor(red: 0.25, green: 0.25, blue: 0.25, alpha: 1.0)
 
         guard let cq = mView.device?.makeCommandQueue() else
         {
