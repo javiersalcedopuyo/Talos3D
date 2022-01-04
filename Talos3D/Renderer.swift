@@ -114,7 +114,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
     public func onMouseDrag(deltaX: Float, deltaY: Float)
     {
-        let d = Vector3(x: -deltaY, y: deltaX, z: 0)
+        let d = Vector3(x: deltaY, y: deltaX, z: 0)
         mCamera.rotate(eulerAngles: d)
     }
 
