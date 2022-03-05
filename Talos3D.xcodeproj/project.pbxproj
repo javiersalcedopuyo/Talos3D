@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		853291D6278370CE00DE4B93 /* Camera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853291D5278370CE00DE4B93 /* Camera.swift */; };
 		853291D8278376D300DE4B93 /* Mobile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853291D7278376D300DE4B93 /* Mobile.swift */; };
+		85607EBB27C2DE9800586527 /* Light.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85607EBA27C2DE9800586527 /* Light.swift */; };
 		857EFDF62780B679009800F2 /* Positionable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 857EFDF52780B679009800F2 /* Positionable.swift */; };
 		858B9D1B278274730023850F /* Transform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 858B9D1A278274730023850F /* Transform.swift */; };
 		859CEA27277DE361001D07B7 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 859CEA26277DE361001D07B7 /* AppDelegate.swift */; };
@@ -20,7 +21,6 @@
 		859CEA40277DE942001D07B7 /* SLA in Frameworks */ = {isa = PBXBuildFile; productRef = 859CEA3F277DE942001D07B7 /* SLA */; };
 		859CEA43277DE970001D07B7 /* SimpleLogs in Frameworks */ = {isa = PBXBuildFile; productRef = 859CEA42277DE970001D07B7 /* SimpleLogs */; };
 		859CEA45277E45A9001D07B7 /* TestShader.metal in Sources */ = {isa = PBXBuildFile; fileRef = 859CEA44277E45A9001D07B7 /* TestShader.metal */; };
-		859CEA47277E46E5001D07B7 /* UBO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 859CEA46277E46E5001D07B7 /* UBO.swift */; };
 		859CEA49277E4763001D07B7 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 859CEA48277E4763001D07B7 /* Model.swift */; };
 		859CEA4E277E4D4F001D07B7 /* bunny.obj in Resources */ = {isa = PBXBuildFile; fileRef = 859CEA4D277E4B63001D07B7 /* bunny.obj */; };
 /* End PBXBuildFile section */
@@ -28,6 +28,7 @@
 /* Begin PBXFileReference section */
 		853291D5278370CE00DE4B93 /* Camera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Camera.swift; sourceTree = "<group>"; };
 		853291D7278376D300DE4B93 /* Mobile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mobile.swift; sourceTree = "<group>"; };
+		85607EBA27C2DE9800586527 /* Light.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Light.swift; sourceTree = "<group>"; };
 		857EFDF52780B679009800F2 /* Positionable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Positionable.swift; sourceTree = "<group>"; };
 		858B9D1A278274730023850F /* Transform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transform.swift; sourceTree = "<group>"; };
 		859CEA23277DE361001D07B7 /* Talos3D.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Talos3D.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -40,7 +41,6 @@
 		859CEA32277DE362001D07B7 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		859CEA34277DE362001D07B7 /* Talos3D.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Talos3D.entitlements; sourceTree = "<group>"; };
 		859CEA44277E45A9001D07B7 /* TestShader.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = TestShader.metal; sourceTree = "<group>"; };
-		859CEA46277E46E5001D07B7 /* UBO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UBO.swift; sourceTree = "<group>"; };
 		859CEA48277E4763001D07B7 /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
 		859CEA4D277E4B63001D07B7 /* bunny.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = bunny.obj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -84,9 +84,9 @@
 				859CEA28277DE361001D07B7 /* GameViewController.swift */,
 				859CEA2A277DE361001D07B7 /* Renderer.swift */,
 				853291D5278370CE00DE4B93 /* Camera.swift */,
+				85607EBA27C2DE9800586527 /* Light.swift */,
 				858B9D1A278274730023850F /* Transform.swift */,
 				859CEA48277E4763001D07B7 /* Model.swift */,
-				859CEA46277E46E5001D07B7 /* UBO.swift */,
 				859CEA2F277DE362001D07B7 /* Assets.xcassets */,
 				859CEA31277DE362001D07B7 /* Main.storyboard */,
 				859CEA34277DE362001D07B7 /* Talos3D.entitlements */,
@@ -203,9 +203,9 @@
 				859CEA49277E4763001D07B7 /* Model.swift in Sources */,
 				859CEA45277E45A9001D07B7 /* TestShader.metal in Sources */,
 				859CEA2D277DE361001D07B7 /* Shaders.metal in Sources */,
-				859CEA47277E46E5001D07B7 /* UBO.swift in Sources */,
 				859CEA29277DE361001D07B7 /* GameViewController.swift in Sources */,
 				859CEA2B277DE361001D07B7 /* Renderer.swift in Sources */,
+				85607EBB27C2DE9800586527 /* Light.swift in Sources */,
 				853291D8278376D300DE4B93 /* Mobile.swift in Sources */,
 				853291D6278370CE00DE4B93 /* Camera.swift in Sources */,
 				857EFDF62780B679009800F2 /* Positionable.swift in Sources */,

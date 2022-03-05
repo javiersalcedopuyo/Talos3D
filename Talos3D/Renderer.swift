@@ -13,6 +13,7 @@ import SimpleLogs
 // TODO: Move to a header file in common with the shaders?
 let VERTEX_BUFFER_INDEX         = 0
 let TRANSFORM_MATRICES_INDEX    = 1
+let LIGHTS_BUFFER_INDEX         = 2
 
 let WORLD_UP = Vector3(x:0, y:1, z:0)
 
@@ -178,11 +179,18 @@ public class Renderer: NSObject, MTKViewDelegate
         let view  = mCamera.getView()
         let proj  = mCamera.getProjection()
 
+        // TODO: Use private storage
         let transformMatrices = mView.device?.makeBuffer(bytes: model.asSingleArray() +
                                                                 view.asSingleArray() +
                                                                 proj.asSingleArray(),
                                                          length: model.size * 3,
                                                          options: [])
+
+        let dirLight = DirectionalLight.init()
+        // TODO: Use private storage
+        let lights = mView.device?.makeBuffer(bytes: dirLight.getBufferData(),
+                                              length: dirLight.getBufferSize(),
+                                              options: [])
 
         let commandBuffer  = mCommandQueue.makeCommandBuffer()!
 
@@ -194,6 +202,8 @@ public class Renderer: NSObject, MTKViewDelegate
 
         commandEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: VERTEX_BUFFER_INDEX)
         commandEncoder?.setVertexBuffer(transformMatrices, offset: 0, index: TRANSFORM_MATRICES_INDEX)
+
+        commandEncoder?.setFragmentBuffer(lights, offset: 0, index: LIGHTS_BUFFER_INDEX)
 
         commandEncoder?.setFragmentTexture(mTexture, index: 0)
         commandEncoder?.setFragmentSamplerState(mSamplerState, index: 0)
