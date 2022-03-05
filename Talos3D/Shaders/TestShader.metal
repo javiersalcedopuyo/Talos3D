@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct UniformBufferObject
+struct TransformMatrices
 {
     float4x4 model;
     float4x4 view;
@@ -26,10 +26,10 @@ struct VertexOut
 
 vertex
 VertexOut vertex_main(VertexIn vert [[ stage_in ]],
-                      constant UniformBufferObject& ubo [[ buffer(1) ]])
+                      constant TransformMatrices& mat [[ buffer(1) ]])
 {
     VertexOut out;
-    out.position = ubo.proj * ubo.view * ubo.model * float4(vert.position, 1.0f);
+    out.position = mat.proj * mat.view * mat.model * float4(vert.position, 1.0f);
     out.color    = vert.color;
     out.normal   = vert.normal;
     out.texcoord = vert.texcoord;

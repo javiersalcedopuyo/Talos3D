@@ -10,8 +10,9 @@ import MetalKit
 import SLA
 import SimpleLogs
 
-let VERTEX_BUFFER_INDEX  = 0
-let UNIFORM_BUFFER_INDEX = 1
+// TODO: Move to a header file in common with the shaders?
+let VERTEX_BUFFER_INDEX         = 0
+let TRANSFORM_MATRICES_INDEX    = 1
 
 let WORLD_UP = Vector3(x:0, y:1, z:0)
 
@@ -171,18 +172,17 @@ public class Renderer: NSObject, MTKViewDelegate
     {
         let vertexBuffer = mModel?.mMeshes[0].vertexBuffers[0].buffer
 
-        var ubo   = UniformBufferObject()
-        ubo.model = mModel?.mModelMatrix ?? Matrix4x4.identity()
-        ubo.model = ubo.model * Matrix4x4.makeRotation(radians: TAU * 0.5, axis: Vector4(x: 0, y: 1, z: 0, w:0))
+        let model = (mModel?.mModelMatrix ?? Matrix4x4.identity()) *
+                    Matrix4x4.makeRotation(radians: TAU * 0.5,
+                                           axis: Vector4(x: 0, y: 1, z: 0, w:0))
+        let view  = mCamera.getView()
+        let proj  = mCamera.getProjection()
 
-        // TODO: Use Constant Buffer?
-        ubo.view  = mCamera.getView()
-        ubo.proj  = mCamera.getProjection()
-
-        let uniformsSize  = ubo.size()
-        let uniformBuffer = mView.device?.makeBuffer(bytes: ubo.asArray(),
-                                                     length: uniformsSize,
-                                                     options: [])
+        let transformMatrices = mView.device?.makeBuffer(bytes: model.asSingleArray() +
+                                                                view.asSingleArray() +
+                                                                proj.asSingleArray(),
+                                                         length: model.size * 3,
+                                                         options: [])
 
         let commandBuffer  = mCommandQueue.makeCommandBuffer()!
 
@@ -191,8 +191,10 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder?.setDepthStencilState(mDepthStencilState)
         commandEncoder?.setFrontFacing(mModel?.mWinding ?? .clockwise)
         commandEncoder?.setCullMode(.back)
+
         commandEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: VERTEX_BUFFER_INDEX)
-        commandEncoder?.setVertexBuffer(uniformBuffer, offset: 0, index: UNIFORM_BUFFER_INDEX)
+        commandEncoder?.setVertexBuffer(transformMatrices, offset: 0, index: TRANSFORM_MATRICES_INDEX)
+
         commandEncoder?.setFragmentTexture(mTexture, index: 0)
         commandEncoder?.setFragmentSamplerState(mSamplerState, index: 0)
 
