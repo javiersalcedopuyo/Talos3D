@@ -64,8 +64,10 @@ class DirectionalLight : LightSource
         return MemoryLayout<Float>.size * 8
     }
 
+    // MARK: Positionable methods
     public func move(to: Vector3)            { self.transform.move(to: to) }
     public func rotate(eulerAngles: Vector3) { self.transform.rotate(eulerAngles: eulerAngles) }
+    public func lookAt(_ target: Vector3)    { self.transform.lookAt(target) }
 }
 
 // TODO: class PointLight

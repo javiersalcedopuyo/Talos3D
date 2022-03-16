@@ -46,9 +46,8 @@ class Camera: Mobile
 
     public func lookAt(_ target: Vector3)
     {
-        // TODO:
-        SimpleLogs.WARNING("UNIMPLEMENTED")
-        // self.updateView()
+        self.transform.lookAt(target)
+        self.updateView()
     }
 
     public func rotate(eulerAngles: Vector3)

@@ -5,6 +5,7 @@
 //  Created by Javier Salcedo on 3/1/22.
 //
 import SLA
+import SimpleLogs
 
 class Transform
 {
@@ -68,7 +69,29 @@ class Transform
         self.up      = self.forward.cross( self.right )
     }
     // TODO: public func rotate(q: Quaterion)
-    // TODO: public func lookAt(target: Vector3)
+
+    public func lookAt(_ target: Vector3)
+    {
+        if self.position == target
+        {
+            SimpleLogs.ERROR("Trying to look at our own position.")
+            return
+        }
+
+        let viewVector = target - self.position
+
+        if areParallel(viewVector, self.up)
+        {
+            SimpleLogs.ERROR("View direction can't be aligned to the UP vector.")
+            return
+        }
+
+        // TODO: assert(self.up.isNormal())
+
+        self.forward = viewVector.normalized()
+        self.right   = self.up.cross(self.forward)
+        self.up      = self.forward.cross(self.right)
+    }
 
     // MARK: - Private
     private var forward:  Vector3
