@@ -1,25 +1,23 @@
 {
-  "object": {
-    "pins": [
-      {
-        "package": "SimpleLogs",
-        "repositoryURL": "https://github.com/javiersalcedopuyo/SimpleLogsSwift",
-        "state": {
-          "branch": "main",
-          "revision": "4fdd2fef5ad58b80c553d3444b6ea277e153829c",
-          "version": null
-        }
-      },
-      {
-        "package": "SLA",
-        "repositoryURL": "https://github.com/javiersalcedopuyo/SLA",
-        "state": {
-          "branch": "main",
-          "revision": "2795a3be03327c9533ae1a81b3574b88d18f8128",
-          "version": null
-        }
+  "pins" : [
+    {
+      "identity" : "simplelogsswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/javiersalcedopuyo/SimpleLogsSwift",
+      "state" : {
+        "branch" : "main",
+        "revision" : "4fdd2fef5ad58b80c553d3444b6ea277e153829c"
       }
-    ]
-  },
-  "version": 1
+    },
+    {
+      "identity" : "sla",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/javiersalcedopuyo/SLA",
+      "state" : {
+        "branch" : "main",
+        "revision" : "46fbd3edb26f0afe21f12d922675a8320326528e"
+      }
+    }
+  ],
+  "version" : 2
 }

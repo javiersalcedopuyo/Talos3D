@@ -99,7 +99,8 @@ public class Renderer: NSObject, MTKViewDelegate
         mDepthStencilState = mView.device?.makeDepthStencilState(descriptor: depthStencilDesc)
 
         mCamera = Camera()
-        mCamera.move(to: Vector3(x:0, y:0.1, z:-0.5))
+        mCamera.move(to: Vector3(x:0.25, y:0.25, z:-0.25))
+        mCamera.lookAt(Vector3(x:0, y:0, z:0))
 
         super.init()
 

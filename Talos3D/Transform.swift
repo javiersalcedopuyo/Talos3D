@@ -64,8 +64,10 @@ class Transform
         // I'm using Z -> Y -> X to avoid gimball lock, since we are probably not rolling often
         let R = rotX * rotY * rotZ
 
+        let worldUp = Vector3(x:0, y:1, z:0)
+
         self.forward = (R * self.forward).normalized() // Is it really necessary to normalize?
-        self.right   = self.forward.cross( Vector3(x:0, y:-1, z:0) )
+        self.right   = worldUp.cross(self.forward).normalized()
         self.up      = self.forward.cross( self.right )
     }
     // TODO: public func rotate(q: Quaterion)
@@ -86,10 +88,8 @@ class Transform
             return
         }
 
-        // TODO: assert(self.up.isNormal())
-
         self.forward = viewVector.normalized()
-        self.right   = self.up.cross(self.forward)
+        self.right   = self.up.cross(self.forward).normalized()
         self.up      = self.forward.cross(self.right)
     }
 
