@@ -49,6 +49,8 @@ float4 fragment_main(VertexOut        frag [[ stage_in   ]],
                      sampler          smp  [[ sampler(0) ]],
                      constant DirectionalLight& light [[ buffer(2) ]])
 {
+    frag.normal = normalize(frag.normal);
+
     auto albedo = tex.sample(smp, frag.texcoord.xy);
 
     auto lambertian = dot(frag.normal, light.direction.xyz);
