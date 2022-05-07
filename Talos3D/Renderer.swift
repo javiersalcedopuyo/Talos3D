@@ -178,11 +178,18 @@ public class Renderer: NSObject, MTKViewDelegate
         let view  = mCamera.getView()
         let proj  = mCamera.getProjection()
 
+        let normalMatrix = Matrix4x4(from3x3: model.get3x3()
+                                                   .inverse()?
+                                                   .transposed()
+                                              ??
+                                              model.get3x3())
+
         // TODO: Use private storage
         let transformMatrices = mView.device?.makeBuffer(bytes: model.asSingleArray() +
                                                                 view.asSingleArray() +
-                                                                proj.asSingleArray(),
-                                                         length: model.size * 3,
+                                                                proj.asSingleArray() +
+                                                                normalMatrix.asSingleArray(),
+                                                         length: model.size * 4,
                                                          options: [])
 
         let dirLight = DirectionalLight.init()
@@ -202,6 +209,7 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: VERTEX_BUFFER_INDEX)
         commandEncoder?.setVertexBuffer(transformMatrices, offset: 0, index: TRANSFORM_MATRICES_INDEX)
 
+        commandEncoder?.setFragmentBuffer(transformMatrices, offset: 0, index: TRANSFORM_MATRICES_INDEX)
         commandEncoder?.setFragmentBuffer(lights, offset: 0, index: LIGHTS_BUFFER_INDEX)
 
         commandEncoder?.setFragmentTexture(mTexture, index: 0)

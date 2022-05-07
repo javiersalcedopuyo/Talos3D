@@ -6,6 +6,7 @@ struct TransformMatrices
     float4x4 model;
     float4x4 view;
     float4x4 proj;
+    float4x4 normal;
 };
 
 struct DirectionalLight
@@ -38,7 +39,7 @@ VertexOut vertex_main(VertexIn vert [[ stage_in ]],
     VertexOut out;
     out.position = mat.proj * mat.view * mat.model * float4(vert.position, 1.0f);
     out.color    = vert.color;
-    out.normal   = vert.normal;
+    out.normal   = (mat.view * mat.normal * float4(vert.normal, 0)).xyz;
     out.texcoord = vert.texcoord;
     return out;
 }
@@ -47,13 +48,15 @@ fragment
 float4 fragment_main(VertexOut        frag [[ stage_in   ]],
                      texture2d<float> tex  [[ texture(0) ]],
                      sampler          smp  [[ sampler(0) ]],
+                     constant TransformMatrices& mat  [[ buffer(1) ]],
                      constant DirectionalLight& light [[ buffer(2) ]])
 {
     frag.normal = normalize(frag.normal);
+    auto lightDirTransformed = normalize(mat.view * float4(-light.direction, 0)).xyz;
 
     auto albedo = tex.sample(smp, frag.texcoord.xy);
 
-    auto lambertian = dot(frag.normal, light.direction.xyz);
+    auto lambertian = saturate(dot(frag.normal, lightDirTransformed.xyz));
 
     auto diffuse = light.color * light.intensity * lambertian;
 

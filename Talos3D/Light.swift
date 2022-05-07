@@ -30,8 +30,7 @@ class DirectionalLight : LightSource
         self.intensity = 1.0
     }
 
-    public init(at: Vector3,
-                direction: Vector3,
+    public init(direction: Vector3,
                 color: Vector4,
                 intensity: Float)
     {
@@ -39,7 +38,7 @@ class DirectionalLight : LightSource
         self.color = color
         self.intensity = intensity
 
-        self.move(to: at)
+        self.lookAt(direction)
     }
 
     public func getBufferData() -> [Float]
