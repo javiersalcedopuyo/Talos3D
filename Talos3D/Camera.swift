@@ -32,8 +32,10 @@ class Camera: Mobile
         self.updateProjection()
     }
 
-    public func getView()       -> Matrix4x4 { return self.view }
-    public func getProjection() -> Matrix4x4 { return self.projection }
+    public func getView()       -> Matrix4x4    { self.view }
+    public func getProjection() -> Matrix4x4    { self.projection }
+    public func getPosition()   -> Vector3      { self.transform.position }
+    public func getRotation()   -> Vector3      { self.transform.getEulerAngles() }
 
     public func move(localDirection: Vector3)
     {

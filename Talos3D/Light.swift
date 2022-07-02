@@ -9,7 +9,6 @@ import SLA
 
 protocol LightSource : Positionable
 {
-    var transform:  Transform   {get}
     var color:      Vector4     {get set} // TODO: use uint8s? Vector3? Pack the intensity in the alpha?
     var intensity:  Float       {get set}
 
@@ -64,9 +63,11 @@ class DirectionalLight : LightSource
     }
 
     // MARK: Positionable methods
-    public func move(to: Vector3)            { self.transform.move(to: to) }
-    public func rotate(eulerAngles: Vector3) { self.transform.rotate(eulerAngles: eulerAngles) }
-    public func lookAt(_ target: Vector3)    { self.transform.lookAt(target) }
+    public func move(to: Vector3)               { self.transform.move(to: to) }
+    public func rotate(eulerAngles: Vector3)    { self.transform.rotate(eulerAngles: eulerAngles) }
+    public func lookAt(_ target: Vector3)       { self.transform.lookAt(target) }
+    public func getPosition() -> Vector3        { self.transform.position }
+    public func getRotation() -> Vector3        { self.transform.getEulerAngles() }
 }
 
 // TODO: class PointLight
