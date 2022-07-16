@@ -9,14 +9,10 @@ import MetalKit
 import SimpleLogs
 import SLA
 
-public class Model
+// TODO: Agregation of Renderables?
+public class Model : Renderable
 {
-    let mVertexDescriptor:         MTLVertexDescriptor
-    let mMeshes:                   [MTKMesh]
-
-    private(set) var mModelMatrix: Matrix4x4
-    private(set) var mWinding:     MTLWinding
-
+    // MARK: - Public Methods
     init(device: MTLDevice, url: URL)
     {
         mVertexDescriptor = Self.getNewVertexDescriptor()
@@ -46,6 +42,15 @@ public class Model
         }
     }
 
+    public func getModelMatrix()        -> Matrix4x4            { mModelMatrix }
+    public func getWinding()            -> MTLWinding           { mWinding }
+    public func getMesh()               -> MTKMesh              { mMeshes[0] }
+    public func getVertexBuffer()       -> MTLBuffer            { self.getMesh()
+                                                                      .vertexBuffers[0]
+                                                                      .buffer }
+    public func getVertexDescriptor()   -> MTLVertexDescriptor  { mVertexDescriptor }
+
+    // MARK: - Private Functions
     static private func getNewVertexDescriptor() -> MTLVertexDescriptor
     {
         let desc = MTLVertexDescriptor()
@@ -125,4 +130,10 @@ public class Model
         attributeUVs.name = MDLVertexAttributeTextureCoordinate
         desc.attributes[3] = attributeUVs
     }
+
+    // MARK: - Private Members
+    private let mVertexDescriptor:  MTLVertexDescriptor
+    private let mMeshes:            [MTKMesh]
+    private var mModelMatrix:       Matrix4x4
+    private var mWinding:           MTLWinding
 }

@@ -34,7 +34,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
     private var mCamera: Camera!
 
-    private var mModel:         Model?
+    private var mModel:         Renderable?
     // TODO: Load textures on demand
     private var mTexture:       MTLTexture?
     // TODO: Pre-built collection?
@@ -83,7 +83,7 @@ public class Renderer: NSObject, MTKViewDelegate
         pipelineDescriptor.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
         pipelineDescriptor.vertexFunction                  = vertexFunction
         pipelineDescriptor.fragmentFunction                = fragmentFunction
-        pipelineDescriptor.vertexDescriptor                = mModel?.mVertexDescriptor
+        pipelineDescriptor.vertexDescriptor                = mModel?.getVertexDescriptor()
         pipelineDescriptor.depthAttachmentPixelFormat      = mView.depthStencilPixelFormat
 
         guard let ps = try! mView.device?.makeRenderPipelineState(descriptor: pipelineDescriptor) else
@@ -170,11 +170,13 @@ public class Renderer: NSObject, MTKViewDelegate
 
     func render()
     {
-        let vertexBuffer = mModel?.mMeshes[0].vertexBuffers[0].buffer
+        // TODO: Throw or return early if mModel is nil
+        let vertexBuffer = mModel?.getVertexBuffer()
 
-        let model = (mModel?.mModelMatrix ?? Matrix4x4.identity()) *
+        let model = (mModel?.getModelMatrix() ?? Matrix4x4.identity()) *
                     Matrix4x4.makeRotation(radians: TAU * 0.5,
                                            axis: Vector4(x: 0, y: 1, z: 0, w:0))
+
         let view  = mCamera.getView()
         let proj  = mCamera.getProjection()
 
@@ -203,7 +205,7 @@ public class Renderer: NSObject, MTKViewDelegate
         let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: mView.currentRenderPassDescriptor!)
         commandEncoder?.setRenderPipelineState(mPipelineState)
         commandEncoder?.setDepthStencilState(mDepthStencilState)
-        commandEncoder?.setFrontFacing(mModel?.mWinding ?? .clockwise)
+        commandEncoder?.setFrontFacing(mModel?.getWinding() ?? .clockwise)
         commandEncoder?.setCullMode(.back)
 
         commandEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: VERTEX_BUFFER_INDEX)
@@ -217,7 +219,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
         if (mModel != nil)
         {
-            for submesh in mModel!.mMeshes[0].submeshes
+            for submesh in mModel!.getMesh().submeshes
             {
                 commandEncoder?.drawIndexedPrimitives(type: submesh.primitiveType,
                                                       indexCount: submesh.indexCount,
