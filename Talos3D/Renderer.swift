@@ -41,6 +41,7 @@ public class Renderer: NSObject, MTKViewDelegate
     private var mSamplerState:  MTLSamplerState?
 
 
+    // TODO: Make it throw
     public init?(mtkView: MTKView)
     {
         if mtkView.device == nil
@@ -67,10 +68,14 @@ public class Renderer: NSObject, MTKViewDelegate
         let vertexFunction   = library.makeFunction(name: "vertex_main")
         let fragmentFunction = library.makeFunction(name: "fragment_main")
 
+        // TODO: Read model and transform data from file
         if let modelURL = Bundle.main.url(forResource: TEST_MODEL_NAME,
                                           withExtension: TEST_MODEL_EXTENSION)
         {
             mModel = Model(device: mtkView.device!, url: modelURL)
+
+            let rotDegrees = SLA.rad2deg(0.5 * TAU)
+            mModel?.rotate(eulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
             // mModel?.flipHandedness()
         }
         else
@@ -173,10 +178,7 @@ public class Renderer: NSObject, MTKViewDelegate
         // TODO: Throw or return early if mModel is nil
         let vertexBuffer = mModel?.getVertexBuffer()
 
-        let model = (mModel?.getModelMatrix() ?? Matrix4x4.identity()) *
-                    Matrix4x4.makeRotation(radians: TAU * 0.5,
-                                           axis: Vector4(x: 0, y: 1, z: 0, w:0))
-
+        let model = mModel?.getModelMatrix() ?? Matrix4x4.identity()
         let view  = mCamera.getView()
         let proj  = mCamera.getProjection()
 

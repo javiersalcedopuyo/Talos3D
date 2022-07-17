@@ -19,18 +19,12 @@ public class Model : Renderable
         mMeshes = Self.loadMeshes(device: device,
                                   url: url,
                                   vertexDescriptor: mVertexDescriptor)
-
-        mModelMatrix = Matrix4x4.identity()
-        mWinding     = .clockwise
+        mWinding   = .clockwise
+        mTransform = Transform()
     }
 
     public func flipHandedness()
     {
-        var mirror = Matrix4x4.identity()
-        mirror.set(col: 2, row: 2, val: -1)
-
-        mModelMatrix = mModelMatrix * mirror
-
         switch mWinding
         {
             case .clockwise:
@@ -38,17 +32,35 @@ public class Model : Renderable
             case .counterClockwise:
                 mWinding = .clockwise
             default:
+                SimpleLogs.ERROR("This shouldn't be possible")
                 break
         }
     }
 
-    public func getModelMatrix()        -> Matrix4x4            { mModelMatrix }
     public func getWinding()            -> MTLWinding           { mWinding }
     public func getMesh()               -> MTKMesh              { mMeshes[0] }
+    public func getVertexDescriptor()   -> MTLVertexDescriptor  { mVertexDescriptor }
     public func getVertexBuffer()       -> MTLBuffer            { self.getMesh()
                                                                       .vertexBuffers[0]
                                                                       .buffer }
-    public func getVertexDescriptor()   -> MTLVertexDescriptor  { mVertexDescriptor }
+    public func getModelMatrix() -> Matrix4x4
+    {
+        var modelMat = mTransform.getLocalToWorldMatrix()
+        if mWinding == .counterClockwise
+        {
+            var mirror = Matrix4x4.identity()
+            mirror.set(col: 2, row: 2, val: -1)
+
+            modelMat = modelMat * mirror
+        }
+        return modelMat
+    }
+
+    public func move(to position: Vector3)      { mTransform.move(to: position) }
+    public func rotate(eulerAngles: Vector3)    { mTransform.rotate(eulerAngles: eulerAngles) }
+    public func lookAt(_ target: Vector3)       { mTransform.lookAt(target) }
+    public func getPosition() -> Vector3        { mTransform.position }
+    public func getRotation() -> Vector3        { mTransform.getEulerAngles() }
 
     // MARK: - Private Functions
     static private func getNewVertexDescriptor() -> MTLVertexDescriptor
@@ -132,8 +144,8 @@ public class Model : Renderable
     }
 
     // MARK: - Private Members
+    private var mTransform:         Transform
     private let mVertexDescriptor:  MTLVertexDescriptor
     private let mMeshes:            [MTKMesh]
-    private var mModelMatrix:       Matrix4x4
     private var mWinding:           MTLWinding
 }

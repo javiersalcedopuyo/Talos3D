@@ -9,8 +9,7 @@ import Metal
 import MetalKit
 import SLA
 
-// TODO: Inherit from Positionable
-protocol Renderable
+protocol Renderable : Positionable
 {
     func getModelMatrix() -> Matrix4x4
     func getWinding() -> MTLWinding
