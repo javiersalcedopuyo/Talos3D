@@ -29,7 +29,7 @@ public class Renderer: NSObject, MTKViewDelegate
     public  var mView:          MTKView
 
     private let mCommandQueue:  MTLCommandQueue
-    private let mPipelineState: MTLRenderPipelineState
+    private let pipeline: Pipeline
     private var mDepthStencilState: MTLDepthStencilState?
 
     private var mCamera: Camera!
@@ -91,11 +91,11 @@ public class Renderer: NSObject, MTKViewDelegate
         pipelineDescriptor.vertexDescriptor                = mModel?.getVertexDescriptor()
         pipelineDescriptor.depthAttachmentPixelFormat      = mView.depthStencilPixelFormat
 
-        guard let ps = try! mView.device?.makeRenderPipelineState(descriptor: pipelineDescriptor) else
+        guard let ps = Pipeline(desc: pipelineDescriptor, device: mtkView.device!) else
         {
             fatalError("Couldn't create pipeline state")
         }
-        mPipelineState = ps
+        pipeline = ps
 
         let depthStencilDesc = MTLDepthStencilDescriptor()
         depthStencilDesc.depthCompareFunction = .less
@@ -207,7 +207,7 @@ public class Renderer: NSObject, MTKViewDelegate
         let commandBuffer  = mCommandQueue.makeCommandBuffer()!
 
         let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: mView.currentRenderPassDescriptor!)
-        commandEncoder?.setRenderPipelineState(mPipelineState)
+        commandEncoder?.setRenderPipelineState(pipeline.state)
         commandEncoder?.setDepthStencilState(mDepthStencilState)
         commandEncoder?.setFrontFacing(mModel?.getWinding() ?? .clockwise)
         commandEncoder?.setCullMode(.back)
