@@ -210,20 +210,15 @@ public class Renderer: NSObject, MTKViewDelegate
         // TODO: Use Renderable's interface instead of a concrete Model
         if let model = mModel as? Model
         {
-            let modelMat = model.getModelMatrix()
-
-            let normalMatrix = Matrix4x4(from3x3: modelMat.get3x3()
-                                                          .inverse()?
-                                                          .transposed()
-                                                  ??
-                                                  modelMat.get3x3())
+            let modelMatrix  = model.getModelMatrix()
+            let normalMatrix = model.getNormalMatrix()
 
             // TODO: Use private storage
-            let transformMatrices = mView.device?.makeBuffer(bytes: modelMat.asSingleArray() +
+            let transformMatrices = mView.device?.makeBuffer(bytes: modelMatrix.asSingleArray() +
                                                                     view.asSingleArray() +
                                                                     proj.asSingleArray() +
                                                                     normalMatrix.asSingleArray(),
-                                                             length: modelMat.size * 4,
+                                                             length: modelMatrix.size * 4,
                                                              options: [])
             transformMatrices?.label = "Transform Matrices"
 

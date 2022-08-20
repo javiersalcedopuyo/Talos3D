@@ -59,6 +59,16 @@ public class Model : Renderable
         return modelMat
     }
 
+    public func getNormalMatrix() -> Matrix4x4
+    {
+        let model = self.getModelMatrix()
+                        .get3x3()
+
+        let normal = model.inverse()?.transposed() ?? model
+
+        return Matrix4x4(from3x3: normal)
+    }
+
     static func getNewVertexDescriptor() -> MTLVertexDescriptor
     {
         let desc = MTLVertexDescriptor()
