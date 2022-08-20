@@ -195,12 +195,14 @@ public class Renderer: NSObject, MTKViewDelegate
                                                                 normalMatrix.asSingleArray(),
                                                          length: model.size * 4,
                                                          options: [])
+        transformMatrices?.label = "Transform Matrices"
 
         let dirLight = DirectionalLight.init()
         // TODO: Use private storage
         let lights = mView.device?.makeBuffer(bytes: dirLight.getBufferData(),
                                               length: dirLight.getBufferSize(),
                                               options: [])
+        lights?.label = "Lights"
 
         let commandBuffer  = mCommandQueue.makeCommandBuffer()!
 
@@ -253,6 +255,7 @@ public class Renderer: NSObject, MTKViewDelegate
                                             scaleFactor: 1.0,
                                             bundle: nil,
                                             options: textureLoaderOptions)
+            mTexture?.label = TEST_TEXTURE_NAME
         }
         catch
         {

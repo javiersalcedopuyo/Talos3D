@@ -21,6 +21,8 @@ public class Model : Renderable
                                   vertexDescriptor: mVertexDescriptor)
         mWinding   = .clockwise
         mTransform = Transform()
+
+        self.getVertexBuffer().label = "Vertex Buffer"
     }
 
     public func flipHandedness()
