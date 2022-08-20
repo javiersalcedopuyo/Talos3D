@@ -207,8 +207,7 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder?.setFragmentSamplerState(mSamplerState, index: 0)
 
         // TODO: Extract renderModel()
-        // TODO: Use Renderable's interface instead of a concrete Model
-        if let model = mModel as? Model
+        if let model = mModel
         {
             let modelMatrix  = model.getModelMatrix()
             let normalMatrix = model.getNormalMatrix()
@@ -222,7 +221,7 @@ public class Renderer: NSObject, MTKViewDelegate
                                                              options: [])
             transformMatrices?.label = "Transform Matrices"
 
-            let material = model.material
+            let material = model.getMaterial()
             commandEncoder?.setRenderPipelineState(material.pipeline.state)
             commandEncoder?.setFrontFacing(model.getWinding())
 

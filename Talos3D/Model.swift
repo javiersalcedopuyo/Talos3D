@@ -101,8 +101,8 @@ public class Model : Renderable
     public func getPosition() -> Vector3        { mTransform.position }
     public func getRotation() -> Vector3        { mTransform.getEulerAngles() }
 
-    // MARK: - Public members
-    public var material: Material
+    public func getMaterial() -> Material       { self.material }
+    public func setMaterial(_ m: Material)    { self.material = m }
 
     // MARK: - Private Functions
 
@@ -165,4 +165,5 @@ public class Model : Renderable
     private let mVertexDescriptor:  MTLVertexDescriptor
     private let mMeshes:            [MTKMesh]
     private var mWinding:           MTLWinding
+    private var material:           Material
 }

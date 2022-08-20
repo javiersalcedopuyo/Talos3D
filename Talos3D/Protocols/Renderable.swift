@@ -18,5 +18,8 @@ protocol Renderable : Positionable
     func getVertexBuffer() -> MTLBuffer
     func getVertexDescriptor() -> MTLVertexDescriptor // TODO: Is this really necessary?
 
+    func getMaterial() -> Material
+    func setMaterial(_ material: Material)
+
     func flipHandedness()
 }
