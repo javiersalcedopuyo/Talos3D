@@ -235,7 +235,8 @@ public class Renderer: NSObject, MTKViewDelegate
 
             for texture in material.textures
             {
-                commandEncoder?.setFragmentTexture(texture.resource, index: texture.index)
+                commandEncoder?.setFragmentTexture((texture.GetResource() as! MTLTexture),
+                                                   index: texture.GetIndex())
             }
 
             for submesh in model.getMesh().submeshes
@@ -272,9 +273,9 @@ public class Renderer: NSObject, MTKViewDelegate
                                                       options: textureLoaderOptions)
             mtlTex.label = TEST_TEXTURE_NAME
 
-            texture = Texture(resource: mtlTex,
-                              stage:    Stage.Fragment,
-                              index:    0)
+            texture = Texture(mtlTexture: mtlTex,
+                              shaderStage: Stage.Fragment,
+                              index: 0)
         }
         catch
         {

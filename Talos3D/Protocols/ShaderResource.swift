@@ -1,5 +1,5 @@
 //
-//  Texture.swift
+//  ShaderResource.swift
 //  Talos3D
 //
 //  Created by Javier Salcedo on 20/8/22.
@@ -14,9 +14,9 @@ enum Stage
     case Compute
 }
 
-struct Texture
+protocol ShaderResource
 {
-    let resource:   MTLTexture
-    var stage:      Stage
-    var index:      Int
+    func GetResource() -> MTLResource
+    func GetStage() -> Stage
+    func GetIndex() -> Int
 }
