@@ -12,10 +12,11 @@ import SLA
 protocol Renderable : Positionable
 {
     func getModelMatrix() -> Matrix4x4
+    // TODO: getNormalMatrix() -> Matrix4x4
     func getWinding() -> MTLWinding
     func getMesh() -> MTKMesh
     func getVertexBuffer() -> MTLBuffer
-    func getVertexDescriptor() -> MTLVertexDescriptor
+    func getVertexDescriptor() -> MTLVertexDescriptor // TODO: Is this really necessary?
 
     func flipHandedness()
 }

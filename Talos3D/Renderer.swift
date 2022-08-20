@@ -25,11 +25,10 @@ let TEST_TEXTURE_NAME      = "TestTexture1"
 
 public class Renderer: NSObject, MTKViewDelegate
 {
-
     public  var mView:          MTKView
 
     private let mCommandQueue:  MTLCommandQueue
-    private let pipeline: Pipeline
+    private let pipeline: Pipeline // TODO: pipeline cache
     private var mDepthStencilState: MTLDepthStencilState?
 
     private var mCamera: Camera!
@@ -37,6 +36,7 @@ public class Renderer: NSObject, MTKViewDelegate
     private var mModel:         Renderable?
     // TODO: Load textures on demand
     private var texture:        Texture?
+    private var material:       Material // TODO: material cache?
     // TODO: Pre-built collection?
     private var mSamplerState:  MTLSamplerState?
 
@@ -68,27 +68,12 @@ public class Renderer: NSObject, MTKViewDelegate
         let vertexFunction   = library.makeFunction(name: "vertex_main")
         let fragmentFunction = library.makeFunction(name: "fragment_main")
 
-        // TODO: Read model and transform data from file
-        if let modelURL = Bundle.main.url(forResource: TEST_MODEL_NAME,
-                                          withExtension: TEST_MODEL_EXTENSION)
-        {
-            mModel = Model(device: mtkView.device!, url: modelURL)
-
-            let rotDegrees = SLA.rad2deg(0.5 * TAU)
-            mModel?.rotate(eulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
-            // mModel?.flipHandedness()
-        }
-        else
-        {
-            SimpleLogs.ERROR("Couldn't load model '" + TEST_MODEL_NAME + "." + TEST_MODEL_EXTENSION + "'")
-        }
-
         // TODO: Extract initPSOs()
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
         pipelineDescriptor.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
         pipelineDescriptor.vertexFunction                  = vertexFunction
         pipelineDescriptor.fragmentFunction                = fragmentFunction
-        pipelineDescriptor.vertexDescriptor                = mModel?.getVertexDescriptor()
+        pipelineDescriptor.vertexDescriptor                = Model.getNewVertexDescriptor()
         pipelineDescriptor.depthAttachmentPixelFormat      = mView.depthStencilPixelFormat
 
         guard let ps = Pipeline(desc: pipelineDescriptor, device: mtkView.device!) else
@@ -103,14 +88,39 @@ public class Renderer: NSObject, MTKViewDelegate
 
         mDepthStencilState = mView.device?.makeDepthStencilState(descriptor: depthStencilDesc)
 
+        // TODO: Extract initScene()
         mCamera = Camera()
         mCamera.move(to: Vector3(x:0.25, y:0.25, z:-0.25))
         mCamera.lookAt(Vector3(x:0, y:0, z:0))
+
+        material = Material(pipeline: pipeline)
+
+        // TODO: Read model and transform data from file
+        if let modelURL = Bundle.main.url(forResource: TEST_MODEL_NAME,
+                                          withExtension: TEST_MODEL_EXTENSION)
+        {
+            mModel = Model(device: mtkView.device!,
+                           url: modelURL,
+                           material: material)
+
+            let rotDegrees = SLA.rad2deg(0.5 * TAU)
+            mModel?.rotate(eulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
+            // mModel?.flipHandedness()
+        }
+        else
+        {
+            SimpleLogs.ERROR("Couldn't load model '" + TEST_MODEL_NAME + "." + TEST_MODEL_EXTENSION + "'")
+        }
 
         super.init()
 
         self.loadTextures()
         self.buildSamplerState()
+
+        if (texture != nil)
+        {
+            material.textures.append(texture!)
+        }
 
         mView.delegate = self
     }
@@ -176,26 +186,8 @@ public class Renderer: NSObject, MTKViewDelegate
     func render()
     {
         // TODO: Throw or return early if mModel is nil
-        let vertexBuffer = mModel?.getVertexBuffer()
-
-        let model = mModel?.getModelMatrix() ?? Matrix4x4.identity()
         let view  = mCamera.getView()
         let proj  = mCamera.getProjection()
-
-        let normalMatrix = Matrix4x4(from3x3: model.get3x3()
-                                                   .inverse()?
-                                                   .transposed()
-                                              ??
-                                              model.get3x3())
-
-        // TODO: Use private storage
-        let transformMatrices = mView.device?.makeBuffer(bytes: model.asSingleArray() +
-                                                                view.asSingleArray() +
-                                                                proj.asSingleArray() +
-                                                                normalMatrix.asSingleArray(),
-                                                         length: model.size * 4,
-                                                         options: [])
-        transformMatrices?.label = "Transform Matrices"
 
         let dirLight = DirectionalLight.init()
         // TODO: Use private storage
@@ -207,26 +199,52 @@ public class Renderer: NSObject, MTKViewDelegate
         let commandBuffer  = mCommandQueue.makeCommandBuffer()!
 
         let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: mView.currentRenderPassDescriptor!)
-        commandEncoder?.setRenderPipelineState(pipeline.state)
         commandEncoder?.setDepthStencilState(mDepthStencilState)
-        commandEncoder?.setFrontFacing(mModel?.getWinding() ?? .clockwise)
         commandEncoder?.setCullMode(.back)
 
-        commandEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: VERTEX_BUFFER_INDEX)
-        commandEncoder?.setVertexBuffer(transformMatrices, offset: 0, index: TRANSFORM_MATRICES_INDEX)
-
-        commandEncoder?.setFragmentBuffer(transformMatrices, offset: 0, index: TRANSFORM_MATRICES_INDEX)
         commandEncoder?.setFragmentBuffer(lights, offset: 0, index: LIGHTS_BUFFER_INDEX)
 
-        if (texture != nil)
-        {
-            commandEncoder?.setFragmentTexture(texture!.resource, index: texture!.index)
-        }
         commandEncoder?.setFragmentSamplerState(mSamplerState, index: 0)
 
-        if (mModel != nil)
+        // TODO: Extract renderModel()
+        // TODO: Use Renderable's interface instead of a concrete Model
+        if let model = mModel as? Model
         {
-            for submesh in mModel!.getMesh().submeshes
+            let modelMat = model.getModelMatrix()
+
+            let normalMatrix = Matrix4x4(from3x3: modelMat.get3x3()
+                                                          .inverse()?
+                                                          .transposed()
+                                                  ??
+                                                  modelMat.get3x3())
+
+            // TODO: Use private storage
+            let transformMatrices = mView.device?.makeBuffer(bytes: modelMat.asSingleArray() +
+                                                                    view.asSingleArray() +
+                                                                    proj.asSingleArray() +
+                                                                    normalMatrix.asSingleArray(),
+                                                             length: modelMat.size * 4,
+                                                             options: [])
+            transformMatrices?.label = "Transform Matrices"
+
+            let material = model.material
+            commandEncoder?.setRenderPipelineState(material.pipeline.state)
+            commandEncoder?.setFrontFacing(model.getWinding())
+
+            commandEncoder?.setVertexBuffer(model.getVertexBuffer(),
+                                            offset: 0,
+                                            index: VERTEX_BUFFER_INDEX)
+
+            commandEncoder?.setVertexBuffer(transformMatrices, offset: 0, index: TRANSFORM_MATRICES_INDEX)
+
+            commandEncoder?.setFragmentBuffer(transformMatrices, offset: 0, index: TRANSFORM_MATRICES_INDEX)
+
+            for texture in material.textures
+            {
+                commandEncoder?.setFragmentTexture(texture.resource, index: texture.index)
+            }
+
+            for submesh in model.getMesh().submeshes
             {
                 commandEncoder?.drawIndexedPrimitives(type: submesh.primitiveType,
                                                       indexCount: submesh.indexCount,

@@ -13,7 +13,7 @@ import SLA
 public class Model : Renderable
 {
     // MARK: - Public Methods
-    init(device: MTLDevice, url: URL)
+    init(device: MTLDevice, url: URL, material mat: Material)
     {
         mVertexDescriptor = Self.getNewVertexDescriptor()
         mMeshes = Self.loadMeshes(device: device,
@@ -21,6 +21,7 @@ public class Model : Renderable
                                   vertexDescriptor: mVertexDescriptor)
         mWinding   = .clockwise
         mTransform = Transform()
+        self.material = mat
 
         self.getVertexBuffer().label = "Vertex Buffer"
     }
@@ -58,14 +59,7 @@ public class Model : Renderable
         return modelMat
     }
 
-    public func move(to position: Vector3)      { mTransform.move(to: position) }
-    public func rotate(eulerAngles: Vector3)    { mTransform.rotate(eulerAngles: eulerAngles) }
-    public func lookAt(_ target: Vector3)       { mTransform.lookAt(target) }
-    public func getPosition() -> Vector3        { mTransform.position }
-    public func getRotation() -> Vector3        { mTransform.getEulerAngles() }
-
-    // MARK: - Private Functions
-    static private func getNewVertexDescriptor() -> MTLVertexDescriptor
+    static func getNewVertexDescriptor() -> MTLVertexDescriptor
     {
         let desc = MTLVertexDescriptor()
         // Position
@@ -90,6 +84,17 @@ public class Model : Renderable
 
         return desc
     }
+
+    public func move(to position: Vector3)      { mTransform.move(to: position) }
+    public func rotate(eulerAngles: Vector3)    { mTransform.rotate(eulerAngles: eulerAngles) }
+    public func lookAt(_ target: Vector3)       { mTransform.lookAt(target) }
+    public func getPosition() -> Vector3        { mTransform.position }
+    public func getRotation() -> Vector3        { mTransform.getEulerAngles() }
+
+    // MARK: - Public members
+    public var material: Material
+
+    // MARK: - Private Functions
 
     static private func loadMeshes(device: MTLDevice,
                                    url: URL,

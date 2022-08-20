@@ -11,6 +11,7 @@
 		853291D8278376D300DE4B93 /* Mobile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853291D7278376D300DE4B93 /* Mobile.swift */; };
 		85391C7528AEDE4600D56B55 /* Pipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85391C7428AEDE4600D56B55 /* Pipeline.swift */; };
 		85405CD328B1384300272372 /* Texture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85405CD228B1384300272372 /* Texture.swift */; };
+		85405CD528B13B7600272372 /* Material.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85405CD428B13B7600272372 /* Material.swift */; };
 		85607EBB27C2DE9800586527 /* Light.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85607EBA27C2DE9800586527 /* Light.swift */; };
 		857EFDF62780B679009800F2 /* Positionable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 857EFDF52780B679009800F2 /* Positionable.swift */; };
 		858A021128832E710033ED54 /* Renderable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 858A021028832E710033ED54 /* Renderable.swift */; };
@@ -33,6 +34,7 @@
 		853291D7278376D300DE4B93 /* Mobile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mobile.swift; sourceTree = "<group>"; };
 		85391C7428AEDE4600D56B55 /* Pipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pipeline.swift; sourceTree = "<group>"; };
 		85405CD228B1384300272372 /* Texture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Texture.swift; sourceTree = "<group>"; };
+		85405CD428B13B7600272372 /* Material.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Material.swift; sourceTree = "<group>"; };
 		85607EBA27C2DE9800586527 /* Light.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Light.swift; sourceTree = "<group>"; };
 		857EFDF52780B679009800F2 /* Positionable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Positionable.swift; sourceTree = "<group>"; };
 		858A021028832E710033ED54 /* Renderable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderable.swift; sourceTree = "<group>"; };
@@ -92,6 +94,7 @@
 				85405CD228B1384300272372 /* Texture.swift */,
 				859CEA2A277DE361001D07B7 /* Renderer.swift */,
 				853291D5278370CE00DE4B93 /* Camera.swift */,
+				85405CD428B13B7600272372 /* Material.swift */,
 				85607EBA27C2DE9800586527 /* Light.swift */,
 				858B9D1A278274730023850F /* Transform.swift */,
 				859CEA48277E4763001D07B7 /* Model.swift */,
@@ -219,6 +222,7 @@
 				859CEA2B277DE361001D07B7 /* Renderer.swift in Sources */,
 				85607EBB27C2DE9800586527 /* Light.swift in Sources */,
 				853291D8278376D300DE4B93 /* Mobile.swift in Sources */,
+				85405CD528B13B7600272372 /* Material.swift in Sources */,
 				853291D6278370CE00DE4B93 /* Camera.swift in Sources */,
 				857EFDF62780B679009800F2 /* Positionable.swift in Sources */,
 				858B9D1B278274730023850F /* Transform.swift in Sources */,
