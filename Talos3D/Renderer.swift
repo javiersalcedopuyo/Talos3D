@@ -36,7 +36,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
     private var mModel:         Renderable?
     // TODO: Load textures on demand
-    private var mTexture:       MTLTexture?
+    private var texture:        Texture?
     // TODO: Pre-built collection?
     private var mSamplerState:  MTLSamplerState?
 
@@ -218,7 +218,10 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder?.setFragmentBuffer(transformMatrices, offset: 0, index: TRANSFORM_MATRICES_INDEX)
         commandEncoder?.setFragmentBuffer(lights, offset: 0, index: LIGHTS_BUFFER_INDEX)
 
-        commandEncoder?.setFragmentTexture(mTexture, index: 0)
+        if (texture != nil)
+        {
+            commandEncoder?.setFragmentTexture(texture!.resource, index: texture!.index)
+        }
         commandEncoder?.setFragmentSamplerState(mSamplerState, index: 0)
 
         if (mModel != nil)
@@ -251,15 +254,19 @@ public class Renderer: NSObject, MTKViewDelegate
 
         do
         {
-            mTexture = try textureLoader.newTexture(name: TEST_TEXTURE_NAME,
-                                            scaleFactor: 1.0,
-                                            bundle: nil,
-                                            options: textureLoaderOptions)
-            mTexture?.label = TEST_TEXTURE_NAME
+            let mtlTex = try textureLoader.newTexture(name: TEST_TEXTURE_NAME,
+                                                      scaleFactor: 1.0,
+                                                      bundle: nil,
+                                                      options: textureLoaderOptions)
+            mtlTex.label = TEST_TEXTURE_NAME
+
+            texture = Texture(resource: mtlTex,
+                              stage:    Stage.Fragment,
+                              index:    0)
         }
         catch
         {
-            mTexture = nil
+            texture = nil
             SimpleLogs.ERROR("Couldn't load texture \(TEST_TEXTURE_NAME)")
         }
     }
