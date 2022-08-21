@@ -37,9 +37,6 @@ public class Renderer: NSObject, MTKViewDelegate
     // TODO: Load textures on demand
     private var texture:        Texture?
     private var material:       Material // TODO: material cache?
-    // TODO: Pre-built collection?
-    private var mSamplerState:  MTLSamplerState?
-
 
     // TODO: Make it throw
     public init?(mtkView: MTKView)
@@ -115,8 +112,6 @@ public class Renderer: NSObject, MTKViewDelegate
         super.init()
 
         self.loadTextures()
-        self.buildSamplerState()
-
         if (texture != nil)
         {
             material.textures.append(texture!)
@@ -204,8 +199,6 @@ public class Renderer: NSObject, MTKViewDelegate
 
         commandEncoder?.setFragmentBuffer(lights, offset: 0, index: LIGHTS_BUFFER_INDEX)
 
-        commandEncoder?.setFragmentSamplerState(mSamplerState, index: 0)
-
         // TODO: Extract renderModel()
         if let model = mModel
         {
@@ -282,18 +275,6 @@ public class Renderer: NSObject, MTKViewDelegate
             texture = nil
             SimpleLogs.ERROR("Couldn't load texture \(TEST_TEXTURE_NAME)")
         }
-    }
-
-    private func buildSamplerState()
-    {
-        // TODO: Read sampler descriptors from file?
-        let texSamplerDesc          = MTLSamplerDescriptor()
-        texSamplerDesc.minFilter    = .nearest
-        texSamplerDesc.magFilter    = .linear
-        texSamplerDesc.sAddressMode = .mirrorRepeat
-        texSamplerDesc.tAddressMode = .mirrorRepeat
-
-        mSamplerState = mView.device?.makeSamplerState(descriptor: texSamplerDesc)
     }
 
     private func countAndDisplayFPS()
