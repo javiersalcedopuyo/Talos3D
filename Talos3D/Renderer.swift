@@ -12,8 +12,9 @@ import SimpleLogs
 
 // TODO: Move to a header file in common with the shaders?
 let VERTEX_BUFFER_INDEX         = 0
-let TRANSFORM_MATRICES_INDEX    = 1
-let LIGHTS_BUFFER_INDEX         = 2
+let SCENE_MATRICES_INDEX        = 1
+let OBJECT_MATRICES_INDEX       = 2
+let LIGHTS_BUFFER_INDEX         = 3
 
 let WORLD_UP = Vector3(x:0, y:1, z:0)
 
@@ -173,15 +174,16 @@ public class Renderer: NSObject, MTKViewDelegate
 
     func render()
     {
+        guard let device = mView.device else { return }
+
         // TODO: Throw or return early if mModel is nil
         let view  = mCamera.getView()
         let proj  = mCamera.getProjection()
 
         let dirLight = DirectionalLight.init()
         // TODO: Use private storage
-        let lights = mView.device?.makeBuffer(bytes: dirLight.getBufferData(),
-                                              length: dirLight.getBufferSize(),
-                                              options: [])
+        let lights = device.makeBuffer(bytes: dirLight.getBufferData(),
+                                              length: dirLight.getBufferSize())
         lights?.label = "Lights"
 
         let commandBuffer  = mCommandQueue.makeCommandBuffer()!
@@ -192,20 +194,23 @@ public class Renderer: NSObject, MTKViewDelegate
 
         commandEncoder?.setFragmentBuffer(lights, offset: 0, index: LIGHTS_BUFFER_INDEX)
 
+        // TODO: Use private storage
+        let sceneMatrices = device.makeBuffer(bytes:  view.asSingleArray() + proj.asSingleArray(),
+                                              length: view.size + proj.size)
+        sceneMatrices?.label = "Scene Matrices"
+        commandEncoder?.setVertexBuffer(sceneMatrices, offset: 0, index: SCENE_MATRICES_INDEX)
+        commandEncoder?.setFragmentBuffer(sceneMatrices, offset: 0, index: SCENE_MATRICES_INDEX)
+
         // TODO: Extract renderModel()
         if let model = mModel
         {
             let modelMatrix  = model.getModelMatrix()
             let normalMatrix = model.getNormalMatrix()
 
-            // TODO: Use private storage
-            let transformMatrices = mView.device?.makeBuffer(bytes: modelMatrix.asSingleArray() +
-                                                                    view.asSingleArray() +
-                                                                    proj.asSingleArray() +
-                                                                    normalMatrix.asSingleArray(),
-                                                             length: modelMatrix.size * 4,
-                                                             options: [])
-            transformMatrices?.label = "Transform Matrices"
+            let objMatrices = device.makeBuffer(bytes:  modelMatrix.asSingleArray() +
+                                                        normalMatrix.asSingleArray(),
+                                                length: modelMatrix.size + normalMatrix.size)
+            objMatrices?.label = "Object Matrices"
 
             let material = model.getMaterial()
             commandEncoder?.setRenderPipelineState(material.pipeline.state)
@@ -216,9 +221,8 @@ public class Renderer: NSObject, MTKViewDelegate
                                             offset: 0,
                                             index: VERTEX_BUFFER_INDEX)
 
-            commandEncoder?.setVertexBuffer(transformMatrices, offset: 0, index: TRANSFORM_MATRICES_INDEX)
-
-            commandEncoder?.setFragmentBuffer(transformMatrices, offset: 0, index: TRANSFORM_MATRICES_INDEX)
+            commandEncoder?.setVertexBuffer(objMatrices, offset: 0, index: OBJECT_MATRICES_INDEX)
+            commandEncoder?.setFragmentBuffer(objMatrices, offset: 0, index: OBJECT_MATRICES_INDEX)
 
             // Set Textures
             for texture in material.textures

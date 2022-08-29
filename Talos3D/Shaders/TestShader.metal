@@ -1,11 +1,15 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct TransformMatrices
+struct SceneMatrices
 {
-    float4x4 model;
     float4x4 view;
     float4x4 proj;
+};
+
+struct ObjectMatrices
+{
+    float4x4 model;
     float4x4 normal;
 };
 
@@ -34,12 +38,13 @@ struct VertexOut
 
 vertex
 VertexOut vertex_main(VertexIn vert [[ stage_in ]],
-                      constant TransformMatrices& mat [[ buffer(1) ]])
+                      constant SceneMatrices& scene [[ buffer(1) ]],
+                      constant ObjectMatrices& obj [[ buffer(2) ]])
 {
     VertexOut out;
-    out.position = mat.proj * mat.view * mat.model * float4(vert.position, 1.0f);
+    out.position = scene.proj * scene.view * obj.model * float4(vert.position, 1.0f);
     out.color    = vert.color;
-    out.normal   = (mat.view * mat.normal * float4(vert.normal, 0)).xyz;
+    out.normal   = (scene.view * obj.normal * float4(vert.normal, 0)).xyz;
     out.texcoord = vert.texcoord;
     return out;
 }
@@ -47,8 +52,8 @@ VertexOut vertex_main(VertexIn vert [[ stage_in ]],
 fragment
 float4 fragment_main(VertexOut        frag [[ stage_in   ]],
                      texture2d<float> tex  [[ texture(0) ]],
-                     constant TransformMatrices& mat  [[ buffer(1) ]],
-                     constant DirectionalLight& light [[ buffer(2) ]])
+                     constant SceneMatrices& scene  [[ buffer(1) ]],
+                     constant DirectionalLight& light [[ buffer(3) ]])
 {
     constexpr sampler smp(min_filter::nearest,
                           mag_filter::linear,
@@ -56,7 +61,7 @@ float4 fragment_main(VertexOut        frag [[ stage_in   ]],
                           t_address::mirrored_repeat);
     
     frag.normal = normalize(frag.normal);
-    auto lightDirTransformed = normalize(mat.view * float4(-light.direction, 0)).xyz;
+    auto lightDirTransformed = normalize(scene.view * float4(-light.direction, 0)).xyz;
 
     auto albedo = tex.sample(smp, frag.texcoord.xy);
 
