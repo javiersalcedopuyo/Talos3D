@@ -34,11 +34,8 @@ public class Renderer: NSObject, MTKViewDelegate
     private var mCamera: Camera!
 
     private var mModel:         Renderable?
-    // TODO: Load textures on demand
-    private var texture:        Texture?
     private var material:       Material // TODO: material cache?
 
-    // TODO: Make it throw
     public init?(mtkView: MTKView)
     {
         if mtkView.device == nil
@@ -111,11 +108,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
         super.init()
 
-        self.loadTextures()
-        if (texture != nil)
-        {
-            material.textures.append(texture!)
-        }
+        self.material.textures = self.loadTextures()
 
         mView.delegate = self
     }
@@ -218,6 +211,7 @@ public class Renderer: NSObject, MTKViewDelegate
             commandEncoder?.setRenderPipelineState(material.pipeline.state)
             commandEncoder?.setFrontFacing(model.getWinding())
 
+            // Set buffers
             commandEncoder?.setVertexBuffer(model.getVertexBuffer(),
                                             offset: 0,
                                             index: VERTEX_BUFFER_INDEX)
@@ -226,12 +220,22 @@ public class Renderer: NSObject, MTKViewDelegate
 
             commandEncoder?.setFragmentBuffer(transformMatrices, offset: 0, index: TRANSFORM_MATRICES_INDEX)
 
+            // Set Textures
             for texture in material.textures
             {
-                commandEncoder?.setFragmentTexture((texture.GetResource() as! MTLTexture),
-                                                   index: texture.GetIndex())
+                if let idx = texture.GetIndexAtStage(.Vertex)
+                {
+                    commandEncoder?.setVertexTexture((texture.GetResource() as! MTLTexture),
+                                                     index: idx)
+                }
+                if let idx = texture.GetIndexAtStage(.Fragment)
+                {
+                    commandEncoder?.setFragmentTexture((texture.GetResource() as! MTLTexture),
+                                                       index: idx)
+                }
             }
 
+            // Draw
             for submesh in model.getMesh().submeshes
             {
                 commandEncoder?.drawIndexedPrimitives(type: submesh.primitiveType,
@@ -248,7 +252,8 @@ public class Renderer: NSObject, MTKViewDelegate
         commandBuffer.commit()
     }
 
-    private func loadTextures()
+    // TODO: Load textures on demand
+    private func loadTextures() -> [Texture]
     {
         // TODO: Async?
         let textureLoader = MTKTextureLoader(device: mView.device!)
@@ -266,14 +271,14 @@ public class Renderer: NSObject, MTKViewDelegate
                                                       options: textureLoaderOptions)
             mtlTex.label = TEST_TEXTURE_NAME
 
-            texture = Texture(mtlTexture: mtlTex,
-                              shaderStage: Stage.Fragment,
-                              index: 0)
+            var texture = Texture(mtlTexture: mtlTex)
+            texture.SetIndex(0, stage: .Fragment)
+            return [texture]
         }
         catch
         {
-            texture = nil
             SimpleLogs.ERROR("Couldn't load texture \(TEST_TEXTURE_NAME)")
+            return []
         }
     }
 

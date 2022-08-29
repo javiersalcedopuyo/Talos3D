@@ -9,18 +9,17 @@ import Metal
 
 public struct Texture : ShaderResource
 {
-    init(mtlTexture: MTLTexture, shaderStage: Stage, index idx: Int)
+    init(mtlTexture: MTLTexture)
     {
-        self.resource   = mtlTexture
-        self.stage      = shaderStage
-        self.index      = idx
+        self.resource = mtlTexture
+        self.indexPerStage = [:]
     }
 
-    func GetResource()  -> MTLResource  { resource }
-    func GetStage()     -> Stage        { stage }
-    func GetIndex()     -> Int          { index }
+    func GetResource()  -> MTLResource  { self.resource }
+    func GetIndexAtStage(_ stage: Stage) -> Int? { self.indexPerStage[stage] }
 
-    private let resource:   MTLTexture
-    private let stage:      Stage
-    private let index:      Int
+    mutating func SetIndex(_ idx: Int, stage: Stage) { self.indexPerStage[stage] = idx }
+
+    private let resource:       MTLTexture
+    private var indexPerStage:  [Stage: Int]
 }

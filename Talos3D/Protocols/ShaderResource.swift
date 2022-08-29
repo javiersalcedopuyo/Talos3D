@@ -17,6 +17,6 @@ enum Stage
 protocol ShaderResource
 {
     func GetResource() -> MTLResource
-    func GetStage() -> Stage
-    func GetIndex() -> Int
+    func GetIndexAtStage(_ stage: Stage) -> Int?
+    mutating func SetIndex(_ idx: Int, stage: Stage)
 }

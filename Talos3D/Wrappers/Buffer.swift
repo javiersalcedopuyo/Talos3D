@@ -9,18 +9,19 @@ import Metal
 
 public struct Buffer : ShaderResource
 {
-    init(mtlBuffer: MTLBuffer, shaderStage: Stage, index idx: Int)
+    // TODO: init(device: MTLDevice, bytes: [Int], size: Int, options: MTLResourceOptions)
+
+    init(mtlBuffer: MTLBuffer)
     {
         self.resource   = mtlBuffer
-        self.stage      = shaderStage
-        self.index      = idx
+        self.indexPerStage = [:]
     }
 
-    func GetResource()  -> MTLResource  { resource }
-    func GetStage()     -> Stage        { stage }
-    func GetIndex()     -> Int          { index }
+    func GetResource()  -> MTLResource  { self.resource }
+    func GetIndexAtStage(_ stage: Stage) -> Int? { self.indexPerStage[stage] }
 
-    private let resource:   MTLBuffer
-    private let stage:      Stage
-    private let index:      Int
+    mutating func SetIndex(_ idx: Int, stage: Stage) { self.indexPerStage[stage] = idx }
+
+    private let resource:       MTLBuffer
+    private var indexPerStage:  [Stage: Int]
 }

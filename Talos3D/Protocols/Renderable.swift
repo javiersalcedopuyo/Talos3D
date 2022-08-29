@@ -15,7 +15,7 @@ protocol Renderable : Positionable
     func getNormalMatrix() -> Matrix4x4
     func getWinding() -> MTLWinding
     func getMesh() -> MTKMesh
-    func getVertexBuffer() -> MTLBuffer
+    func getVertexBuffer() -> MTLBuffer // TODO: Return a Buffer instead?
 
     func getMaterial() -> Material
     func setMaterial(_ material: Material)
