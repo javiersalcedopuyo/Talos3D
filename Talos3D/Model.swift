@@ -15,13 +15,19 @@ public class Model : Renderable
     // MARK: - Public Methods
     init(device: MTLDevice, url: URL, material mat: Material)
     {
-        mVertexDescriptor = Self.getNewVertexDescriptor()
+        self.material = mat
+
+        let vertexDesc = self.material.pipeline.descriptor.vertexDescriptor
+        if vertexDesc == nil
+        {
+            SimpleLogs.WARNING("Material with no vertex descriptor, model's default will be used instead.")
+        }
+
         mMeshes = Self.loadMeshes(device: device,
                                   url: url,
-                                  vertexDescriptor: mVertexDescriptor)
+                                  vertexDescriptor: vertexDesc ?? Self.getNewVertexDescriptor())
         mWinding   = .clockwise
         mTransform = Transform()
-        self.material = mat
 
         self.getVertexBuffer().label = "Vertex Buffer"
     }
@@ -42,7 +48,6 @@ public class Model : Renderable
 
     public func getWinding()            -> MTLWinding           { mWinding }
     public func getMesh()               -> MTKMesh              { mMeshes[0] }
-    public func getVertexDescriptor()   -> MTLVertexDescriptor  { mVertexDescriptor }
     public func getVertexBuffer()       -> MTLBuffer            { self.getMesh()
                                                                       .vertexBuffers[0]
                                                                       .buffer }
@@ -162,7 +167,6 @@ public class Model : Renderable
 
     // MARK: - Private Members
     private var mTransform:         Transform
-    private let mVertexDescriptor:  MTLVertexDescriptor
     private let mMeshes:            [MTKMesh]
     private var mWinding:           MTLWinding
     private var material:           Material

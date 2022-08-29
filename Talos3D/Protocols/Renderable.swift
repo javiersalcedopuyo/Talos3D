@@ -16,7 +16,6 @@ protocol Renderable : Positionable
     func getWinding() -> MTLWinding
     func getMesh() -> MTKMesh
     func getVertexBuffer() -> MTLBuffer
-    func getVertexDescriptor() -> MTLVertexDescriptor // TODO: Is this really necessary?
 
     func getMaterial() -> Material
     func setMaterial(_ material: Material)
