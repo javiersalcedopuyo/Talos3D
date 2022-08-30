@@ -234,14 +234,14 @@ public class Renderer: NSObject, MTKViewDelegate
             // Set Textures
             for texture in material.textures
             {
-                if let idx = texture.GetIndexAtStage(.Vertex)
+                if let idx = texture.getIndexAtStage(.Vertex)
                 {
-                    commandEncoder?.setVertexTexture((texture.GetResource() as! MTLTexture),
+                    commandEncoder?.setVertexTexture((texture.getResource() as! MTLTexture),
                                                      index: idx)
                 }
-                if let idx = texture.GetIndexAtStage(.Fragment)
+                if let idx = texture.getIndexAtStage(.Fragment)
                 {
-                    commandEncoder?.setFragmentTexture((texture.GetResource() as! MTLTexture),
+                    commandEncoder?.setFragmentTexture((texture.getResource() as! MTLTexture),
                                                        index: idx)
                 }
             }
@@ -280,10 +280,9 @@ public class Renderer: NSObject, MTKViewDelegate
                                                       scaleFactor: 1.0,
                                                       bundle: nil,
                                                       options: textureLoaderOptions)
-            mtlTex.label = TEST_TEXTURE_NAME
 
-            var texture = Texture(mtlTexture: mtlTex)
-            texture.SetIndex(0, stage: .Fragment)
+            var texture = Texture(mtlTexture: mtlTex, label: TEST_TEXTURE_NAME)
+            texture.setIndex(0, stage: .Fragment)
             return [texture]
         }
         catch

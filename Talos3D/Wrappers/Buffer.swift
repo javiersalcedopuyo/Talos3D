@@ -11,16 +11,20 @@ public struct Buffer : ShaderResource
 {
     // TODO: init(device: MTLDevice, bytes: [Int], size: Int, options: MTLResourceOptions)
 
-    init(mtlBuffer: MTLBuffer)
+    init(mtlBuffer: MTLBuffer, label: String? = nil)
     {
         self.resource   = mtlBuffer
         self.indexPerStage = [:]
+
+        if let l = label { self.setLabel(l) }
     }
 
-    func GetResource()  -> MTLResource  { self.resource }
-    func GetIndexAtStage(_ stage: Stage) -> Int? { self.indexPerStage[stage] }
+    func getResource()                      -> MTLResource  { self.resource }
+    func getIndexAtStage(_ stage: Stage)    -> Int?         { self.indexPerStage[stage] }
+    func getLabel()                         -> String?      { self.resource.label }
 
-    mutating func SetIndex(_ idx: Int, stage: Stage) { self.indexPerStage[stage] = idx }
+    mutating func setIndex(_ idx: Int, stage: Stage)    { self.indexPerStage[stage] = idx }
+    mutating func setLabel(_ label: String)             { self.resource.label = label }
 
     private let resource:       MTLBuffer
     private var indexPerStage:  [Stage: Int]
