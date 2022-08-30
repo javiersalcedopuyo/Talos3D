@@ -32,10 +32,8 @@ public class Renderer: NSObject, MTKViewDelegate
     private let pipeline: Pipeline // TODO: pipeline cache
     private var mDepthStencilState: MTLDepthStencilState?
 
-    private var mCamera: Camera!
-
-    private var mModel:         Renderable?
-    private var material:       Material // TODO: material cache?
+    private var scene: Scene
+    private var material: Material // TODO: material cache?
 
     public init?(mtkView: MTKView)
     {
@@ -83,53 +81,64 @@ public class Renderer: NSObject, MTKViewDelegate
 
         mDepthStencilState = mView.device?.makeDepthStencilState(descriptor: depthStencilDesc)
 
-        // TODO: Extract initScene()
-        mCamera = Camera()
-        mCamera.move(to: Vector3(x:0.25, y:0.25, z:-0.25))
-        mCamera.lookAt(Vector3(x:0, y:0, z:0))
+        self.material = Material(pipeline: pipeline)
+        self.material.textures = Self.loadTextures(device: mtkView.device!)
 
-        material = Material(pipeline: pipeline)
+        let cam = Camera()
+        cam.move(to: Vector3(x:0.25, y:0.25, z:-0.25))
+        cam.lookAt(Vector3(x:0, y:0, z:0))
+
+        let sceneBuilder = SceneBuilder()
+                            .add(camera: cam)
+                            .add(light: DirectionalLight())
 
         // TODO: Read model and transform data from file
         if let modelURL = Bundle.main.url(forResource: TEST_MODEL_NAME,
                                           withExtension: TEST_MODEL_EXTENSION)
         {
-            mModel = Model(device: mtkView.device!,
-                           url: modelURL,
-                           material: material)
+            let model = Model(device: mtkView.device!,
+                              url: modelURL,
+                              material: self.material)
 
             let rotDegrees = SLA.rad2deg(0.5 * TAU)
-            mModel?.rotate(eulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
-            // mModel?.flipHandedness()
+            model.rotate(eulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
+            // model.flipHandedness()
+
+            sceneBuilder.add(object: model)
         }
         else
         {
             SimpleLogs.ERROR("Couldn't load model '" + TEST_MODEL_NAME + "." + TEST_MODEL_EXTENSION + "'")
         }
 
+        self.scene = sceneBuilder.build(device: mtkView.device!)
+
         super.init()
-
-        self.material.textures = self.loadTextures()
-
         mView.delegate = self
     }
 
     public func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize)
     {
         let newAspectRatio = Float(size.width / size.height)
-        mCamera.updateAspectRatio(newAspectRatio)
+        self.scene
+            .mainCamera
+            .updateAspectRatio(newAspectRatio)
     }
 
     public func onMouseDrag(deltaX: Float, deltaY: Float)
     {
         let d = Vector3(x: deltaY, y: deltaX, z: 0)
-        mCamera.rotate(eulerAngles: d)
+        self.scene
+            .mainCamera
+            .rotate(eulerAngles: d)
     }
 
     public func onScroll(scroll: Float)
     {
         let d = Vector3(x: 0, y: 0, z: scroll)
-        mCamera.move(localDirection: d)
+        self.scene
+            .mainCamera
+            .move(localDirection: d)
     }
 
     public func onKeyPress(keyCode: UInt16)
@@ -161,7 +170,9 @@ public class Renderer: NSObject, MTKViewDelegate
 //                SimpleLogs.INFO("Unsupported key")
                 break
         }
-        mCamera.move(localDirection: d)
+        self.scene
+            .mainCamera
+            .move(localDirection: d)
     }
 
     public func draw(in view: MTKView) { self.update() }
@@ -177,10 +188,10 @@ public class Renderer: NSObject, MTKViewDelegate
         guard let device = mView.device else { return }
 
         // TODO: Throw or return early if mModel is nil
-        let view  = mCamera.getView()
-        let proj  = mCamera.getProjection()
+        let view  = self.scene.mainCamera.getView()
+        let proj  = self.scene.mainCamera.getProjection()
 
-        let dirLight = DirectionalLight.init()
+        let dirLight = self.scene.lights[0] // TODO: Multiple lights
         // TODO: Use private storage
         let lights = device.makeBuffer(bytes: dirLight.getBufferData(),
                                               length: dirLight.getBufferSize())
@@ -202,7 +213,7 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder?.setFragmentBuffer(sceneMatrices, offset: 0, index: SCENE_MATRICES_INDEX)
 
         // TODO: Extract renderModel()
-        if let model = mModel
+        for model in self.scene.objects
         {
             let modelMatrix  = model.getModelMatrix()
             let normalMatrix = model.getNormalMatrix()
@@ -257,10 +268,10 @@ public class Renderer: NSObject, MTKViewDelegate
     }
 
     // TODO: Load textures on demand
-    private func loadTextures() -> [Texture]
+    static private func loadTextures(device: MTLDevice) -> [Texture]
     {
         // TODO: Async?
-        let textureLoader = MTKTextureLoader(device: mView.device!)
+        let textureLoader = MTKTextureLoader(device: device)
 
         let textureLoaderOptions = [
             MTKTextureLoader.Option.textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
