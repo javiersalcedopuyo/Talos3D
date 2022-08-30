@@ -6,6 +6,7 @@
 - [ ] Dynamic scenes
 - [ ] Read from file
 - [ ] Save to file
+- [ ] Create and store the buffers in advance (at the moment scenes are small enough to not need buffers at all)
 
 ```mermaid
 classDiagram
@@ -30,27 +31,9 @@ class Camera{
     - projection: Matrix4x4
 }
 
-class ShaderResource{
-    + GetResource()
-    + GetIndexAtStage(stage) -> Int
-    + SetIndex(index, stage)
-    - indexPerStage: [Stage: Int]
-}
-ShaderResource *-- MTLResource
-
-MTLResource <|-- MTLTexture
-MTLResource <|-- MTLBuffer
-
-Texture --|> ShaderResource
-Buffer --|> ShaderResource
-
-Scene *--"*" Buffer
 Scene *--"*" LightSource
 Scene *--"*" Camera
 Scene *--"*" Renderable
-
-LightSource .. Buffer
-Camera .. Buffer
 
 class LightSource{
     + color: Vector4

@@ -185,43 +185,33 @@ public class Renderer: NSObject, MTKViewDelegate
 
     func render()
     {
-        guard let device = mView.device else { return }
-
-        // TODO: Throw or return early if mModel is nil
-        let view  = self.scene.mainCamera.getView()
-        let proj  = self.scene.mainCamera.getProjection()
-
-        let dirLight = self.scene.lights[0] // TODO: Multiple lights
-        // TODO: Use private storage
-        let lights = device.makeBuffer(bytes: dirLight.getBufferData(),
-                                              length: dirLight.getBufferSize())
-        lights?.label = "Lights"
+        let view = self.scene.mainCamera.getView()
+        let proj = self.scene.mainCamera.getProjection()
 
         let commandBuffer  = mCommandQueue.makeCommandBuffer()!
-
         let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: mView.currentRenderPassDescriptor!)
         commandEncoder?.setDepthStencilState(mDepthStencilState)
         commandEncoder?.setCullMode(.back)
 
-        commandEncoder?.setFragmentBuffer(lights, offset: 0, index: LIGHTS_BUFFER_INDEX)
+        // Set Scene buffers
+        commandEncoder?.setVertexBytes(view.asSingleArray() + proj.asSingleArray(),
+                                       length: view.size + proj.size,
+                                       index: SCENE_MATRICES_INDEX)
 
-        // TODO: Use private storage
-        let sceneMatrices = device.makeBuffer(bytes:  view.asSingleArray() + proj.asSingleArray(),
-                                              length: view.size + proj.size)
-        sceneMatrices?.label = "Scene Matrices"
-        commandEncoder?.setVertexBuffer(sceneMatrices, offset: 0, index: SCENE_MATRICES_INDEX)
-        commandEncoder?.setFragmentBuffer(sceneMatrices, offset: 0, index: SCENE_MATRICES_INDEX)
+        commandEncoder?.setFragmentBytes(view.asSingleArray() + proj.asSingleArray(),
+                                         length: view.size + proj.size,
+                                        index: SCENE_MATRICES_INDEX)
+
+        let dirLight = self.scene.lights[0] // TODO: Multiple lights
+        commandEncoder?.setFragmentBytes(dirLight.getBufferData(),
+                                         length: dirLight.getBufferSize(),
+                                         index: LIGHTS_BUFFER_INDEX)
 
         // TODO: Extract renderModel()
         for model in self.scene.objects
         {
             let modelMatrix  = model.getModelMatrix()
             let normalMatrix = model.getNormalMatrix()
-
-            let objMatrices = device.makeBuffer(bytes:  modelMatrix.asSingleArray() +
-                                                        normalMatrix.asSingleArray(),
-                                                length: modelMatrix.size + normalMatrix.size)
-            objMatrices?.label = "Object Matrices"
 
             let material = model.getMaterial()
             commandEncoder?.setRenderPipelineState(material.pipeline.state)
@@ -232,9 +222,15 @@ public class Renderer: NSObject, MTKViewDelegate
                                             offset: 0,
                                             index: VERTEX_BUFFER_INDEX)
 
-            commandEncoder?.setVertexBuffer(objMatrices, offset: 0, index: OBJECT_MATRICES_INDEX)
-            commandEncoder?.setFragmentBuffer(objMatrices, offset: 0, index: OBJECT_MATRICES_INDEX)
+            commandEncoder?.setVertexBytes(modelMatrix.asSingleArray() +
+                                           normalMatrix.asSingleArray(),
+                                           length: modelMatrix.size + normalMatrix.size,
+                                           index: OBJECT_MATRICES_INDEX)
 
+            commandEncoder?.setFragmentBytes(modelMatrix.asSingleArray() +
+                                             normalMatrix.asSingleArray(),
+                                             length: modelMatrix.size + normalMatrix.size,
+                                             index: OBJECT_MATRICES_INDEX)
             // Set Textures
             for texture in material.textures
             {
