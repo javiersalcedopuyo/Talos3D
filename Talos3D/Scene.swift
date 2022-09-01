@@ -35,12 +35,21 @@ class SceneBuilder
 
     func build(device: MTLDevice) -> Scene
     {
-        return Scene(cameras: self.cameras,
-                     lights:  self.lights,
-                     objects: self.objects)
+        let result = Scene(cameras: self.cameras,
+                           lights:  self.lights,
+                           objects: self.objects)
+        reset()
+        return result
     }
 
     // MARK: - Private
+    private func reset()
+    {
+        cameras = []
+        lights  = []
+        objects = []
+    }
+
     private var cameras:    [Camera]        = []
     private var lights:     [LightSource]   = []
     private var objects:    [Renderable]    = []
