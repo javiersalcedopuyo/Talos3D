@@ -24,8 +24,8 @@ let BUNNY_MODEL_NAME        = "bunny"
 let TEAPOT_MODEL_NAME       = "teapot"
 let OBJ_FILE_EXTENSION      = "obj"
 
-let TEST_TEXTURE_NAME      = "TestTexture1"
-//let TEST_TEXTURE_EXTENSION = "png"
+let TEST_TEXTURE_NAME_1     = "TestTexture1"
+let TEST_TEXTURE_NAME_2     = "TestTexture2"
 
 public class Renderer: NSObject, MTKViewDelegate
 {
@@ -76,11 +76,9 @@ public class Renderer: NSObject, MTKViewDelegate
 
         mDepthStencilState = mView.device?.makeDepthStencilState(descriptor: depthStencilDesc)
 
-        self.material = Material(pipeline: pipeline)
-        self.material.textures = Self.loadTextures(device: mtkView.device!)
-
         super.init()
 
+        self.createMaterials(device: mtkView.device!)
         self.buildScene(device: mtkView.device!)
         mView.delegate = self
     }
@@ -234,6 +232,27 @@ public class Renderer: NSObject, MTKViewDelegate
     public var mView: MTKView
 
     // MARK: - Private
+    private func createMaterials(device: MTLDevice)
+    {
+        let material1 = Material(pipeline: pipeline)
+        if let tex = Self.loadTexture(name: TEST_TEXTURE_NAME_1,
+                                      index: ALBEDO_MAP_INDEX,
+                                      device: device)
+        {
+            material1.textures.append(tex)
+        }
+
+        let material2 = material1.copy() as! Material
+        if let tex = Self.loadTexture(name: TEST_TEXTURE_NAME_2,
+                                      index: ALBEDO_MAP_INDEX,
+                                      device: device)
+        {
+            material2.textures.append(tex)
+        }
+        self.materials.append(material1)
+        self.materials.append(material2)
+    }
+
     private func buildScene(device: MTLDevice)
     {
         let cam = Camera()
@@ -257,7 +276,7 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             let model = Model(device: device,
                               url: modelURL,
-                              material: self.material)
+                              material: self.materials[0])
 
             let rotDegrees = SLA.rad2deg(0.5 * TAU)
             model.rotate(eulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
@@ -275,7 +294,7 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             let model = Model(device: device,
                               url: modelURL,
-                              material: self.material)
+                              material: self.materials[1])
 
             model.scale(by: 0.01)
             model.move(to: Vector3(x:0.35, y:0.075, z:0))
@@ -289,31 +308,32 @@ public class Renderer: NSObject, MTKViewDelegate
     }
 
     // TODO: Load textures on demand
-    static private func loadTextures(device: MTLDevice) -> [Texture]
+    static private func loadTexture(name: String, index: Int, device: MTLDevice) -> Texture?
     {
         // TODO: Async?
         let textureLoader = MTKTextureLoader(device: device)
 
         let textureLoaderOptions = [
             MTKTextureLoader.Option.textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
-            MTKTextureLoader.Option.textureStorageMode: NSNumber(value: MTLStorageMode.`private`.rawValue)
+            MTKTextureLoader.Option.textureStorageMode: NSNumber(value: MTLStorageMode.`private`.rawValue),
+            MTKTextureLoader.Option.generateMipmaps: true
         ]
 
         do
         {
-            let mtlTex = try textureLoader.newTexture(name: TEST_TEXTURE_NAME,
+            let mtlTex = try textureLoader.newTexture(name: name,
                                                       scaleFactor: 1.0,
                                                       bundle: nil,
                                                       options: textureLoaderOptions)
 
-            var texture = Texture(mtlTexture: mtlTex, label: TEST_TEXTURE_NAME)
-            texture.setIndex(ALBEDO_MAP_INDEX, stage: .Fragment)
-            return [texture]
+            var texture = Texture(mtlTexture: mtlTex, label: name)
+            texture.setIndex(index, stage: .Fragment)
+            return texture
         }
         catch
         {
-            SimpleLogs.ERROR("Couldn't load texture \(TEST_TEXTURE_NAME)")
-            return []
+            SimpleLogs.ERROR("Couldn't load texture \(name)")
+            return nil
         }
     }
 
@@ -348,5 +368,5 @@ public class Renderer: NSObject, MTKViewDelegate
     private var mDepthStencilState: MTLDepthStencilState?
 
     private var scene: Scene!
-    private var material: Material // TODO: material cache?
+    private var materials: [Material] = [] // TODO: Default material
 }
