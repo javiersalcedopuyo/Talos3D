@@ -28,15 +28,7 @@ let TEST_TEXTURE_NAME      = "TestTexture1"
 
 public class Renderer: NSObject, MTKViewDelegate
 {
-    public  var mView:          MTKView
-
-    private let mCommandQueue:  MTLCommandQueue
-    private let pipeline: Pipeline // TODO: pipeline cache
-    private var mDepthStencilState: MTLDepthStencilState?
-
-    private var scene: Scene
-    private var material: Material // TODO: material cache?
-
+    // MARK: - Public
     public init?(mtkView: MTKView)
     {
         if mtkView.device == nil
@@ -86,36 +78,9 @@ public class Renderer: NSObject, MTKViewDelegate
         self.material = Material(pipeline: pipeline)
         self.material.textures = Self.loadTextures(device: mtkView.device!)
 
-        let cam = Camera()
-        cam.move(to: Vector3(x:0.25, y:0.25, z:-0.25))
-        cam.lookAt(Vector3(x:0, y:0, z:0))
-
-        let sceneBuilder = SceneBuilder()
-                            .add(camera: cam)
-                            .add(light: DirectionalLight())
-
-        // TODO: Read model and transform data from file
-        if let modelURL = Bundle.main.url(forResource: TEST_MODEL_NAME,
-                                          withExtension: TEST_MODEL_EXTENSION)
-        {
-            let model = Model(device: mtkView.device!,
-                              url: modelURL,
-                              material: self.material)
-
-            let rotDegrees = SLA.rad2deg(0.5 * TAU)
-            model.rotate(eulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
-            // model.flipHandedness()
-
-            sceneBuilder.add(object: model)
-        }
-        else
-        {
-            SimpleLogs.ERROR("Couldn't load model '" + TEST_MODEL_NAME + "." + TEST_MODEL_EXTENSION + "'")
-        }
-
-        self.scene = sceneBuilder.build(device: mtkView.device!)
-
         super.init()
+
+        self.buildScene(device: mtkView.device!)
         mView.delegate = self
     }
 
@@ -265,6 +230,41 @@ public class Renderer: NSObject, MTKViewDelegate
         commandBuffer.commit()
     }
 
+    public var mView: MTKView
+
+    // MARK: - Private
+    private func buildScene(device: MTLDevice)
+    {
+        let cam = Camera()
+        cam.move(to: Vector3(x:0.25, y:0.25, z:-0.25))
+        cam.lookAt(Vector3(x:0, y:0, z:0))
+
+        let sceneBuilder = SceneBuilder()
+                            .add(camera: cam)
+                            .add(light: DirectionalLight())
+
+        // TODO: Read model and transform data from file
+        if let modelURL = Bundle.main.url(forResource: TEST_MODEL_NAME,
+                                          withExtension: TEST_MODEL_EXTENSION)
+        {
+            let model = Model(device: device,
+                              url: modelURL,
+                              material: self.material)
+
+            let rotDegrees = SLA.rad2deg(0.5 * TAU)
+            model.rotate(eulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
+            // model.flipHandedness()
+
+            sceneBuilder.add(object: model)
+        }
+        else
+        {
+            SimpleLogs.ERROR("Couldn't load model '" + TEST_MODEL_NAME + "." + TEST_MODEL_EXTENSION + "'")
+        }
+
+        self.scene = sceneBuilder.build(device: device)
+    }
+
     // TODO: Load textures on demand
     static private func loadTextures(device: MTLDevice) -> [Texture]
     {
@@ -319,4 +319,11 @@ public class Renderer: NSObject, MTKViewDelegate
             StaticWrapper.cummulativeTime = 0
         }
     }
+
+    private let mCommandQueue:  MTLCommandQueue
+    private let pipeline: Pipeline // TODO: pipeline cache
+    private var mDepthStencilState: MTLDepthStencilState?
+
+    private var scene: Scene!
+    private var material: Material // TODO: material cache?
 }
