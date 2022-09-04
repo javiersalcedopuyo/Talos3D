@@ -111,6 +111,10 @@ public class Model : Renderable
     public func getPosition() -> Vector3        { mTransform.position }
     public func getRotation() -> Vector3        { mTransform.getEulerAngles() }
 
+    public func scale(by factor: Float)         { mTransform.scale(by: factor) }
+    public func setScale(_ newScale: Vector3)   { mTransform.setScale(newScale) }
+    public func getScale() -> Vector3           { mTransform.scale }
+
     public func getMaterial() -> Material       { self.material }
     public func setMaterial(_ m: Material)    { self.material = m }
 

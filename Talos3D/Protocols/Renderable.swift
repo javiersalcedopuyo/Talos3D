@@ -11,6 +11,10 @@ import SLA
 
 protocol Renderable : Positionable
 {
+    func getScale() -> Vector3
+    func setScale(_ newScale: Vector3)
+    func scale(by factor: Float)
+
     func getModelMatrix() -> Matrix4x4
     func getNormalMatrix() -> Matrix4x4
     func getWinding() -> MTLWinding

@@ -34,10 +34,10 @@ class Transform
 
     public func getLocalToWorldMatrix() -> Matrix4x4
     {
-        let X = Vector4(self.right,    0)
-        let Y = Vector4(self.up,       0)
-        let Z = Vector4(self.forward,  0)
-        let T = Vector4(self.position, 1)
+        let X = Vector4(self.right      * self.scale.x, 0)
+        let Y = Vector4(self.up         * self.scale.y, 0)
+        let Z = Vector4(self.forward    * self.scale.z, 0)
+        let T = Vector4(self.position,                  1)
 
         return Matrix4x4(a: X, b: Y, c: Z, d: T)
     }
@@ -48,6 +48,9 @@ class Transform
     // TODO: public func getRotationQuaternion() -> Quaternion { return self.rotQuaternion }
 
     public func move(to: Vector3) { self.position = to }
+
+    public func setScale(_ newScale: Vector3)   { self.scale = newScale }
+    public func scale(by factor: Float)         { self.scale *= factor }
 
     public func rotate(eulerAngles: Vector3)
     {
