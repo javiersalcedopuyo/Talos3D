@@ -27,6 +27,10 @@ let OBJ_FILE_EXTENSION      = "obj"
 let TEST_TEXTURE_NAME_1     = "TestTexture1"
 let TEST_TEXTURE_NAME_2     = "TestTexture2"
 
+let TEST_MATERIAL_NAME_1    = "Mat1"
+let TEST_MATERIAL_NAME_2    = "Mat2"
+let WRONG_MATERIAL_NAME     = "LoremIpsum"
+
 public class Renderer: NSObject, MTKViewDelegate
 {
     // MARK: - Public
@@ -48,27 +52,39 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         mCommandQueue = cq
 
-        // TODO: Extract initShaders() (Should be loaded alongside the assets? loadMaterials()?)
+        // TODO: Extract initPSOs()
         guard let library = mView.device?.makeDefaultLibrary() else
         {
             fatalError("Couldn't create shader library!")
         }
-        let vertexFunction   = library.makeFunction(name: "vertex_main")
-        let fragmentFunction = library.makeFunction(name: "fragment_main")
 
-        // TODO: Extract initPSOs()
+        let defaultVertFunc = library.makeFunction(name: "default_vertex_main")
+        let defaultFragFunc = library.makeFunction(name: "default_fragment_main")
+        let mainVertFunc    = library.makeFunction(name: "vertex_main")
+        let mainFragFunc    = library.makeFunction(name: "fragment_main")
+
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
         pipelineDescriptor.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
-        pipelineDescriptor.vertexFunction                  = vertexFunction
-        pipelineDescriptor.fragmentFunction                = fragmentFunction
+        pipelineDescriptor.vertexFunction                  = defaultVertFunc
+        pipelineDescriptor.fragmentFunction                = defaultFragFunc
         pipelineDescriptor.vertexDescriptor                = Model.getNewVertexDescriptor()
         pipelineDescriptor.depthAttachmentPixelFormat      = mView.depthStencilPixelFormat
 
         guard let ps = Pipeline(desc: pipelineDescriptor, device: mtkView.device!) else
         {
-            fatalError("Couldn't create pipeline state")
+            fatalError("Couldn't create default pipeline state")
         }
-        pipeline = ps
+        self.defaultPipeline = ps
+
+        pipelineDescriptor.vertexFunction   = mainVertFunc
+        pipelineDescriptor.fragmentFunction = mainFragFunc
+        guard let ps = Pipeline(desc: pipelineDescriptor, device: mtkView.device!) else
+        {
+            fatalError("Couldn't create main pipeline state")
+        }
+        self.mainPipeline = ps
+
+        self.defaultMaterial = Material(pipeline: self.defaultPipeline)
 
         let depthStencilDesc = MTLDepthStencilDescriptor()
         depthStencilDesc.depthCompareFunction = .less
@@ -234,7 +250,7 @@ public class Renderer: NSObject, MTKViewDelegate
     // MARK: - Private
     private func createMaterials(device: MTLDevice)
     {
-        let material1 = Material(pipeline: pipeline)
+        let material1 = Material(pipeline: self.mainPipeline)
         if let tex = Self.loadTexture(name: TEST_TEXTURE_NAME_1,
                                       index: ALBEDO_MAP_INDEX,
                                       device: device)
@@ -249,8 +265,9 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             material2.textures.append(tex)
         }
-        self.materials.append(material1)
-        self.materials.append(material2)
+
+        self.materials[TEST_MATERIAL_NAME_1] = material1
+        self.materials[TEST_MATERIAL_NAME_2] = material2
     }
 
     private func buildScene(device: MTLDevice)
@@ -276,7 +293,7 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             let model = Model(device: device,
                               url: modelURL,
-                              material: self.materials[0])
+                              material: self.materials[TEST_MATERIAL_NAME_1] ?? self.defaultMaterial)
 
             let rotDegrees = SLA.rad2deg(0.5 * TAU)
             model.rotate(eulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
@@ -294,7 +311,7 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             let model = Model(device: device,
                               url: modelURL,
-                              material: self.materials[1])
+                              material: self.materials[TEST_MATERIAL_NAME_2] ?? self.defaultMaterial)
 
             model.scale(by: 0.01)
             model.move(to: Vector3(x:0.35, y:0.075, z:0))
@@ -364,9 +381,14 @@ public class Renderer: NSObject, MTKViewDelegate
     }
 
     private let mCommandQueue:  MTLCommandQueue
-    private let pipeline: Pipeline // TODO: pipeline cache
+    // TODO: pipeline cache
+    private let mainPipeline: Pipeline
+    private let defaultPipeline: Pipeline
+
     private var mDepthStencilState: MTLDepthStencilState?
 
     private var scene: Scene!
-    private var materials: [Material] = [] // TODO: Default material
+
+    private let defaultMaterial: Material
+    private var materials: [String: Material] = [:]
 }
