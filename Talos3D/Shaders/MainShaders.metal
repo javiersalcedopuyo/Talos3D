@@ -1,4 +1,7 @@
 #include <metal_stdlib>
+
+#include "ShadersCommon.h"
+
 using namespace metal;
 
 struct SceneMatrices
@@ -22,10 +25,10 @@ struct DirectionalLight
 
 struct VertexIn
 {
-    float3 position [[ attribute(0) ]];
-    float3 color    [[ attribute(1) ]];
-    float3 normal   [[ attribute(2) ]];
-    float2 texcoord [[ attribute(3) ]];
+    float3 position [[ attribute(POSITION) ]];
+    float3 color    [[ attribute(COLOR) ]];
+    float3 normal   [[ attribute(NORMAL) ]];
+    float2 texcoord [[ attribute(TEXCOORD) ]];
 };
 
 struct VertexOut
@@ -38,8 +41,8 @@ struct VertexOut
 
 vertex
 VertexOut vertex_main(VertexIn vert [[ stage_in ]],
-                      constant SceneMatrices& scene [[ buffer(1) ]],
-                      constant ObjectMatrices& obj [[ buffer(2) ]])
+                      constant SceneMatrices& scene [[ buffer(SCENE_MATRICES) ]],
+                      constant ObjectMatrices& obj  [[ buffer(OBJECT_MATRICES) ]])
 {
     VertexOut out;
     out.position = scene.proj * scene.view * obj.model * float4(vert.position, 1.0f);
@@ -50,10 +53,10 @@ VertexOut vertex_main(VertexIn vert [[ stage_in ]],
 }
 
 fragment
-float4 fragment_main(VertexOut        frag [[ stage_in   ]],
-                     texture2d<float> tex  [[ texture(0) ]],
-                     constant SceneMatrices& scene  [[ buffer(1) ]],
-                     constant DirectionalLight& light [[ buffer(3) ]])
+float4 fragment_main(VertexOut        frag [[ stage_in ]],
+                     texture2d<float> tex  [[ texture(ALBEDO) ]],
+                     constant SceneMatrices& scene    [[ buffer(SCENE_MATRICES) ]],
+                     constant DirectionalLight& light [[ buffer(LIGHTS) ]])
 {
     constexpr sampler smp(min_filter::nearest,
                           mag_filter::linear,

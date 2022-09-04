@@ -11,10 +11,12 @@ import SLA
 import SimpleLogs
 
 // TODO: Move to a header file in common with the shaders?
-let VERTEX_BUFFER_INDEX         = 0
-let SCENE_MATRICES_INDEX        = 1
-let OBJECT_MATRICES_INDEX       = 2
-let LIGHTS_BUFFER_INDEX         = 3
+let VERTEX_BUFFER_INDEX         = BufferIndices.VERTICES.rawValue
+let SCENE_MATRICES_INDEX        = BufferIndices.SCENE_MATRICES.rawValue
+let OBJECT_MATRICES_INDEX       = BufferIndices.OBJECT_MATRICES.rawValue
+let LIGHTS_BUFFER_INDEX         = BufferIndices.LIGHTS.rawValue
+
+let ALBEDO_MAP_INDEX            = TextureIndices.ALBEDO.rawValue
 
 let WORLD_UP = Vector3(x:0, y:1, z:0)
 
@@ -282,7 +284,7 @@ public class Renderer: NSObject, MTKViewDelegate
                                                       options: textureLoaderOptions)
 
             var texture = Texture(mtlTexture: mtlTex, label: TEST_TEXTURE_NAME)
-            texture.setIndex(0, stage: .Fragment)
+            texture.setIndex(ALBEDO_MAP_INDEX, stage: .Fragment)
             return [texture]
         }
         catch

@@ -9,6 +9,11 @@ import MetalKit
 import SimpleLogs
 import SLA
 
+let POSITION = VertexAttributeIndices.POSITION.rawValue
+let COLOR    = VertexAttributeIndices.COLOR.rawValue
+let NORMAL   = VertexAttributeIndices.NORMAL.rawValue
+let TEXCOORD = VertexAttributeIndices.TEXCOORD.rawValue
+
 // TODO: Agregation of Renderables?
 public class Model : Renderable
 {
@@ -78,21 +83,21 @@ public class Model : Renderable
     {
         let desc = MTLVertexDescriptor()
         // Position
-        desc.attributes[0].format      = .float3
-        desc.attributes[0].bufferIndex = VERTEX_BUFFER_INDEX
-        desc.attributes[0].offset      = 0
+        desc.attributes[POSITION].format      = .float3
+        desc.attributes[POSITION].bufferIndex = VERTEX_BUFFER_INDEX
+        desc.attributes[POSITION].offset      = 0
         // Color
-        desc.attributes[1].format      = .float3
-        desc.attributes[1].bufferIndex = VERTEX_BUFFER_INDEX
-        desc.attributes[1].offset      = MemoryLayout<SIMD3<Float>>.stride
+        desc.attributes[COLOR].format         = .float3
+        desc.attributes[COLOR].bufferIndex    = VERTEX_BUFFER_INDEX
+        desc.attributes[COLOR].offset         = MemoryLayout<SIMD3<Float>>.stride
         // Normals
-        desc.attributes[2].format      = .float3
-        desc.attributes[2].bufferIndex = VERTEX_BUFFER_INDEX
-        desc.attributes[2].offset      = MemoryLayout<SIMD3<Float>>.stride
+        desc.attributes[NORMAL].format        = .float3
+        desc.attributes[NORMAL].bufferIndex   = VERTEX_BUFFER_INDEX
+        desc.attributes[NORMAL].offset        = MemoryLayout<SIMD3<Float>>.stride
         // UVs
-        desc.attributes[3].format      = .float2
-        desc.attributes[3].bufferIndex = VERTEX_BUFFER_INDEX
-        desc.attributes[3].offset      = MemoryLayout<SIMD3<Float>>.stride * 3
+        desc.attributes[TEXCOORD].format      = .float2
+        desc.attributes[TEXCOORD].bufferIndex = VERTEX_BUFFER_INDEX
+        desc.attributes[TEXCOORD].offset      = MemoryLayout<SIMD3<Float>>.stride * 3
 
         desc.layouts[0].stride         = MemoryLayout<SIMD3<Float>>.stride * 3 +
                                          MemoryLayout<SIMD2<Float>>.stride
@@ -148,21 +153,21 @@ public class Model : Renderable
 
     static private func nameDescriptorAttributes(_ desc: inout MDLVertexDescriptor)
     {
-        let attributePosition = desc.attributes[0] as! MDLVertexAttribute
+        let attributePosition = desc.attributes[POSITION] as! MDLVertexAttribute
         attributePosition.name = MDLVertexAttributePosition
-        desc.attributes[0] = attributePosition
+        desc.attributes[POSITION] = attributePosition
 
-        let attributeColor = desc.attributes[1] as! MDLVertexAttribute
+        let attributeColor = desc.attributes[COLOR] as! MDLVertexAttribute
         attributeColor.name = MDLVertexAttributeColor
-        desc.attributes[1] = attributeColor
+        desc.attributes[COLOR] = attributeColor
 
-        let attributeNormal = desc.attributes[2] as! MDLVertexAttribute
+        let attributeNormal = desc.attributes[NORMAL] as! MDLVertexAttribute
         attributeNormal.name = MDLVertexAttributeNormal
-        desc.attributes[2] = attributeNormal
+        desc.attributes[NORMAL] = attributeNormal
 
-        let attributeUVs = desc.attributes[3] as! MDLVertexAttribute
+        let attributeUVs = desc.attributes[TEXCOORD] as! MDLVertexAttribute
         attributeUVs.name = MDLVertexAttributeTextureCoordinate
-        desc.attributes[3] = attributeUVs
+        desc.attributes[TEXCOORD] = attributeUVs
     }
 
     // MARK: - Private Members

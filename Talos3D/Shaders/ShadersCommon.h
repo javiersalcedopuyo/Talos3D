@@ -20,29 +20,32 @@
 
 #include <simd/simd.h>
 
-typedef NS_ENUM(NSInteger, BufferIndex)
+typedef NS_ENUM(NSInteger, VertexAttributeIndices)
 {
-    BufferIndexMeshPositions = 0,
-    BufferIndexMeshGenerics  = 1,
-    BufferIndexUniforms      = 2
+    POSITION = 0,
+    COLOR,
+    NORMAL,
+    TEXCOORD,
+
+    ATTRIBUTE_COUNT
 };
 
-typedef NS_ENUM(NSInteger, VertexAttribute)
+typedef NS_ENUM(NSInteger, BufferIndices)
 {
-    VertexAttributePosition  = 0,
-    VertexAttributeTexcoord  = 1,
+    VERTICES = 0,
+    SCENE_MATRICES,
+    OBJECT_MATRICES,
+    LIGHTS,
+
+    BUFFER_COUNT
 };
 
-typedef NS_ENUM(NSInteger, TextureIndex)
+typedef NS_ENUM(NSInteger, TextureIndices)
 {
-    TextureIndexColor    = 0,
-};
+    ALBEDO = 0,
 
-typedef struct
-{
-    matrix_float4x4 projectionMatrix;
-    matrix_float4x4 modelViewMatrix;
-} Uniforms;
+    TEXTURE_COUNT
+};
 
 #endif /* ShaderTypes_h */
 
