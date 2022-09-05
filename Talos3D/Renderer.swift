@@ -146,12 +146,12 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder?.setCullMode(.back)
 
         // Set Scene buffers
-        commandEncoder?.setVertexBytes(view.asSingleArray() + proj.asSingleArray(),
-                                       length: view.size + proj.size,
+        commandEncoder?.setVertexBytes(view.asPackedArray() + proj.asPackedArray(),
+                                       length: Matrix4x4.size() * 2,
                                        index: SCENE_MATRICES_INDEX)
 
-        commandEncoder?.setFragmentBytes(view.asSingleArray() + proj.asSingleArray(),
-                                         length: view.size + proj.size,
+        commandEncoder?.setFragmentBytes(view.asPackedArray() + proj.asPackedArray(),
+                                         length: Matrix4x4.size() * 2,
                                         index: SCENE_MATRICES_INDEX)
 
         let dirLight = self.scene.lights[0] // TODO: Multiple lights
@@ -174,14 +174,14 @@ public class Renderer: NSObject, MTKViewDelegate
                                             offset: 0,
                                             index: VERTEX_BUFFER_INDEX)
 
-            commandEncoder?.setVertexBytes(modelMatrix.asSingleArray() +
-                                           normalMatrix.asSingleArray(),
-                                           length: modelMatrix.size + normalMatrix.size,
+            commandEncoder?.setVertexBytes(modelMatrix.asPackedArray() +
+                                           normalMatrix.asPackedArray(),
+                                           length: Matrix4x4.size() * 2,
                                            index: OBJECT_MATRICES_INDEX)
 
-            commandEncoder?.setFragmentBytes(modelMatrix.asSingleArray() +
-                                             normalMatrix.asSingleArray(),
-                                             length: modelMatrix.size + normalMatrix.size,
+            commandEncoder?.setFragmentBytes(modelMatrix.asPackedArray() +
+                                             normalMatrix.asPackedArray(),
+                                             length: Matrix4x4.size() * 2,
                                              index: OBJECT_MATRICES_INDEX)
             // Set Textures
             for texture in material.textures
