@@ -15,6 +15,7 @@
 		85405CD528B13B7600272372 /* Material.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85405CD428B13B7600272372 /* Material.swift */; };
 		85405CD728B1648000272372 /* ShaderResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85405CD628B1648000272372 /* ShaderResource.swift */; };
 		85405CD928B1671A00272372 /* Buffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85405CD828B1671A00272372 /* Buffer.swift */; };
+		8548252828C6073E00514ED0 /* CameraTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8548252728C6073E00514ED0 /* CameraTests.swift */; };
 		854D844728C512FA00B70916 /* teapot.obj in Resources */ = {isa = PBXBuildFile; fileRef = 854D844628C512FA00B70916 /* teapot.obj */; };
 		85607EBB27C2DE9800586527 /* Light.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85607EBA27C2DE9800586527 /* Light.swift */; };
 		857EFDF62780B679009800F2 /* Positionable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 857EFDF52780B679009800F2 /* Positionable.swift */; };
@@ -33,6 +34,16 @@
 		859CEA4E277E4D4F001D07B7 /* bunny.obj in Resources */ = {isa = PBXBuildFile; fileRef = 859CEA4D277E4B63001D07B7 /* bunny.obj */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		8548252228C6071600514ED0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 859CEA1B277DE361001D07B7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 859CEA22277DE361001D07B7;
+			remoteInfo = Talos3D;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		85308EA728BD0AA2002D510F /* Scene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene.swift; sourceTree = "<group>"; };
 		853291D5278370CE00DE4B93 /* Camera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Camera.swift; sourceTree = "<group>"; };
@@ -42,6 +53,8 @@
 		85405CD428B13B7600272372 /* Material.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Material.swift; sourceTree = "<group>"; };
 		85405CD628B1648000272372 /* ShaderResource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShaderResource.swift; sourceTree = "<group>"; };
 		85405CD828B1671A00272372 /* Buffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Buffer.swift; sourceTree = "<group>"; };
+		8548251E28C6071600514ED0 /* Talos3DTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Talos3DTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8548252728C6073E00514ED0 /* CameraTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTests.swift; sourceTree = "<group>"; };
 		854D844628C512FA00B70916 /* teapot.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = teapot.obj; sourceTree = "<group>"; };
 		85607EBA27C2DE9800586527 /* Light.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Light.swift; sourceTree = "<group>"; };
 		857EFDF52780B679009800F2 /* Positionable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Positionable.swift; sourceTree = "<group>"; };
@@ -62,6 +75,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		8548251B28C6071600514ED0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		859CEA20277DE361001D07B7 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -84,10 +104,19 @@
 			path = Wrappers;
 			sourceTree = "<group>";
 		};
+		8548251F28C6071600514ED0 /* Talos3DTests */ = {
+			isa = PBXGroup;
+			children = (
+				8548252728C6073E00514ED0 /* CameraTests.swift */,
+			);
+			path = Talos3DTests;
+			sourceTree = "<group>";
+		};
 		859CEA1A277DE361001D07B7 = {
 			isa = PBXGroup;
 			children = (
 				859CEA25277DE361001D07B7 /* Talos3D */,
+				8548251F28C6071600514ED0 /* Talos3DTests */,
 				859CEA24277DE361001D07B7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -96,6 +125,7 @@
 			isa = PBXGroup;
 			children = (
 				859CEA23277DE361001D07B7 /* Talos3D.app */,
+				8548251E28C6071600514ED0 /* Talos3DTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -156,6 +186,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		8548251D28C6071600514ED0 /* Talos3DTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8548252628C6071600514ED0 /* Build configuration list for PBXNativeTarget "Talos3DTests" */;
+			buildPhases = (
+				8548251A28C6071600514ED0 /* Sources */,
+				8548251B28C6071600514ED0 /* Frameworks */,
+				8548251C28C6071600514ED0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8548252328C6071600514ED0 /* PBXTargetDependency */,
+			);
+			name = Talos3DTests;
+			productName = Talos3DTests;
+			productReference = 8548251E28C6071600514ED0 /* Talos3DTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		859CEA22277DE361001D07B7 /* Talos3D */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 859CEA37277DE362001D07B7 /* Build configuration list for PBXNativeTarget "Talos3D" */;
@@ -184,9 +232,13 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1320;
+				LastSwiftUpdateCheck = 1340;
 				LastUpgradeCheck = 1340;
 				TargetAttributes = {
+					8548251D28C6071600514ED0 = {
+						CreatedOnToolsVersion = 13.4.1;
+						TestTargetID = 859CEA22277DE361001D07B7;
+					};
 					859CEA22277DE361001D07B7 = {
 						CreatedOnToolsVersion = 13.2.1;
 					};
@@ -210,11 +262,19 @@
 			projectRoot = "";
 			targets = (
 				859CEA22277DE361001D07B7 /* Talos3D */,
+				8548251D28C6071600514ED0 /* Talos3DTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		8548251C28C6071600514ED0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		859CEA21277DE361001D07B7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -229,6 +289,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		8548251A28C6071600514ED0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8548252828C6073E00514ED0 /* CameraTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		859CEA1F277DE361001D07B7 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -256,6 +324,14 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		8548252328C6071600514ED0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 859CEA22277DE361001D07B7 /* Talos3D */;
+			targetProxy = 8548252228C6071600514ED0 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin PBXVariantGroup section */
 		859CEA31277DE362001D07B7 /* Main.storyboard */ = {
 			isa = PBXVariantGroup;
@@ -268,6 +344,40 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		8548252428C6071600514ED0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = JavierSalcedo.Talos3DTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Talos3D.app/Contents/MacOS/Talos3D";
+			};
+			name = Debug;
+		};
+		8548252528C6071600514ED0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = JavierSalcedo.Talos3DTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Talos3D.app/Contents/MacOS/Talos3D";
+			};
+			name = Release;
+		};
 		859CEA35277DE362001D07B7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -440,6 +550,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		8548252628C6071600514ED0 /* Build configuration list for PBXNativeTarget "Talos3DTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8548252428C6071600514ED0 /* Debug */,
+				8548252528C6071600514ED0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		859CEA1E277DE361001D07B7 /* Build configuration list for PBXProject "Talos3D" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

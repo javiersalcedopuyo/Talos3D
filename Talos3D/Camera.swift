@@ -10,12 +10,12 @@ import SimpleLogs
 class Camera: Mobile
 {
     // MARK: - public
-    public var moveSpeed:   Vector3
+    public var moveSpeed:   Float
     public var rotateSpeed: Float
 
     public init()
     {
-        moveSpeed   = Vector3(x:0.005, y:0.005, z: 0.01)
+        moveSpeed   = 0.01
         rotateSpeed = 0.1
 
         fovy        = SLA.deg2rad(45.0)

@@ -10,7 +10,7 @@ import SLA
 // Objects that can move around the 3D world
 protocol Mobile: Positionable
 {
-    var moveSpeed:   Vector3 {get set}
+    var moveSpeed:   Float {get set}
     var rotateSpeed: Float {get set}
 
     mutating func move(localDirection: Vector3)
