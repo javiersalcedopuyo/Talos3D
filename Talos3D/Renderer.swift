@@ -52,37 +52,7 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         mCommandQueue = cq
 
-        // TODO: Extract initPSOs()
-        guard let library = mView.device?.makeDefaultLibrary() else
-        {
-            fatalError("Couldn't create shader library!")
-        }
-
-        let defaultVertFunc = library.makeFunction(name: "default_vertex_main")
-        let defaultFragFunc = library.makeFunction(name: "default_fragment_main")
-        let mainVertFunc    = library.makeFunction(name: "vertex_main")
-        let mainFragFunc    = library.makeFunction(name: "fragment_main")
-
-        let pipelineDescriptor = MTLRenderPipelineDescriptor()
-        pipelineDescriptor.colorAttachments[0].pixelFormat = mtkView.colorPixelFormat
-        pipelineDescriptor.vertexFunction                  = defaultVertFunc
-        pipelineDescriptor.fragmentFunction                = defaultFragFunc
-        pipelineDescriptor.vertexDescriptor                = Model.getNewVertexDescriptor()
-        pipelineDescriptor.depthAttachmentPixelFormat      = mView.depthStencilPixelFormat
-
-        guard let ps = Pipeline(desc: pipelineDescriptor, device: mtkView.device!) else
-        {
-            fatalError("Couldn't create default pipeline state")
-        }
-        self.defaultPipeline = ps
-
-        pipelineDescriptor.vertexFunction   = mainVertFunc
-        pipelineDescriptor.fragmentFunction = mainFragFunc
-        guard let ps = Pipeline(desc: pipelineDescriptor, device: mtkView.device!) else
-        {
-            fatalError("Couldn't create main pipeline state")
-        }
-        self.mainPipeline = ps
+        (self.defaultPipeline, self.mainPipeline) = Self.createPipelines(view: mView)
 
         self.defaultMaterial = Material(pipeline: self.defaultPipeline)
 
@@ -248,6 +218,45 @@ public class Renderer: NSObject, MTKViewDelegate
     public var mView: MTKView
 
     // MARK: - Private
+    static private func createPipelines(view: MTKView) -> (default: Pipeline, main: Pipeline)
+    {
+        guard let device = view.device else
+        {
+            fatalError("No device")
+        }
+
+        guard let library = view.device?.makeDefaultLibrary() else
+        {
+            fatalError("Couldn't create shader library!")
+        }
+
+        let defaultVertFunc = library.makeFunction(name: "default_vertex_main")
+        let defaultFragFunc = library.makeFunction(name: "default_fragment_main")
+        let mainVertFunc    = library.makeFunction(name: "vertex_main")
+        let mainFragFunc    = library.makeFunction(name: "fragment_main")
+
+        let pipelineDescriptor = MTLRenderPipelineDescriptor()
+        pipelineDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
+        pipelineDescriptor.vertexFunction                  = defaultVertFunc
+        pipelineDescriptor.fragmentFunction                = defaultFragFunc
+        pipelineDescriptor.vertexDescriptor                = Model.getNewVertexDescriptor()
+        pipelineDescriptor.depthAttachmentPixelFormat      = view.depthStencilPixelFormat
+
+        guard let defaultPipeline = Pipeline(desc: pipelineDescriptor, device: device) else
+        {
+            fatalError("Couldn't create default pipeline state")
+        }
+
+        pipelineDescriptor.vertexFunction   = mainVertFunc
+        pipelineDescriptor.fragmentFunction = mainFragFunc
+        guard let mainPipeline = Pipeline(desc: pipelineDescriptor, device: device) else
+        {
+            fatalError("Couldn't create main pipeline state")
+        }
+
+        return (defaultPipeline, mainPipeline)
+    }
+
     private func createMaterials(device: MTLDevice)
     {
         let material1 = Material(pipeline: self.mainPipeline)
@@ -324,7 +333,6 @@ public class Renderer: NSObject, MTKViewDelegate
         }
     }
 
-    // TODO: Load textures on demand
     static private func loadTexture(name: String, index: Int, device: MTLDevice) -> Texture?
     {
         // TODO: Async?
