@@ -55,23 +55,29 @@ class Transform
     public func rotate(eulerAngles: Vector3)
     {
         // Tilt
-        let rotX = Matrix3x3.makeRotation(radians: SLA.deg2rad(eulerAngles.x),
-                                          axis:    self.right)
+        let rotX = Quaternion.makeRotation(radians: SLA.deg2rad(eulerAngles.x),
+                                           axis:    self.right)
         // Pan
-        let rotY = Matrix3x3.makeRotation(radians: SLA.deg2rad(eulerAngles.y),
-                                          axis:    self.up)
+        let rotY = Quaternion.makeRotation(radians: SLA.deg2rad(eulerAngles.y),
+                                           axis:    self.up)
         // Roll
-        let rotZ = Matrix3x3.makeRotation(radians: SLA.deg2rad(eulerAngles.z),
-                                          axis:    self.forward)
+        let rotZ = Quaternion.makeRotation(radians: SLA.deg2rad(eulerAngles.z),
+                                           axis:    self.forward)
 
-        // I'm using Z -> Y -> X to avoid gimball lock, since we are probably not rolling often
         let R = rotX * rotY * rotZ
 
         let worldUp = Vector3(x:0, y:1, z:0)
 
-        self.forward = (R * self.forward).normalized() // Is it really necessary to normalize?
-        self.right   = worldUp.cross(self.forward).normalized()
-        self.up      = self.forward.cross( self.right )
+        do
+        {
+            self.forward = try SLA.rotate(vector: self.forward, quaternion: R).normalized() // Is it really necessary to normalize?
+            self.right   = worldUp.cross(self.forward).normalized()
+            self.up      = self.forward.cross( self.right )
+        }
+        catch
+        {
+            SimpleLogs.WARNING("Failed to apply rotation. Reason: \(error)")
+        }
     }
     // TODO: public func rotate(q: Quaterion)
 
