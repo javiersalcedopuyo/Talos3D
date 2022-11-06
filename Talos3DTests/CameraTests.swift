@@ -19,12 +19,32 @@ class CameraTests: XCTestCase
         self.cam.moveSpeed = 1
     }
 
+    func testLookAt()
+    {
+        let pos = Vector3(x: 0, y: 1, z: 2)
+        self.cam.lookAt(pos)
+
+        let forward = self.cam.transform.getForward()
+        XCTAssertEqual(forward.dot(pos.normalized()), 1, accuracy: SLA.FLOAT_EPSILON)
+    }
+
     func testLookAtForward()
     {
         let pos = Vector3(x: 0, y: 1, z: 2)
         self.cam.move(to: pos)
         self.cam.lookAt(Vector3.zero())
-        XCTAssertEqual(self.cam.transform.getForward(), -pos.normalized())
+
+        let forward = self.cam.transform.getForward()
+        XCTAssertEqual(forward.dot(pos.normalized()), -1, accuracy: SLA.FLOAT_EPSILON)
+    }
+
+    func testLookUp()
+    {
+        let pos = Vector3(x: 0, y: 1, z: 0)
+        self.cam.lookAt(pos)
+
+        let forward = self.cam.transform.getForward()
+        XCTAssertEqual(forward.dot(pos), 1, accuracy: SLA.FLOAT_EPSILON)
     }
 
     func testLocalToWorldMatrix()
@@ -36,12 +56,9 @@ class CameraTests: XCTestCase
         let worldForward = (self.cam.transform.getLocalToWorldMatrix() * localForward)
                             .xyz()
                             .normalized()
-        for i in 0..<3
-        {
-            XCTAssertEqual(worldForward[i],
-                           self.cam.transform.getForward()[i],
-                           accuracy: 0.0002)
-        }
+
+        let forward = self.cam.transform.getForward()
+        XCTAssertEqual(worldForward.dot(forward), 1, accuracy: SLA.FLOAT_EPSILON)
     }
 
     func testMoveInLocalDirection()

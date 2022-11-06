@@ -85,21 +85,29 @@ class Transform
     {
         if self.position == target
         {
-            SimpleLogs.ERROR("Trying to look at our own position.")
+            SimpleLogs.WARNING("Trying to look at our own position. Nothing will happen.")
             return
         }
 
-        let viewVector = target - self.position
+        let viewVector = (target - self.position).normalized()
 
-        if areParallel(viewVector, self.up)
+        let angle = acos(self.forward.dot(viewVector))
+        let rotationAxis = areParallel(viewVector, self.forward)
+                            ? self.up
+                            : self.forward.cross(viewVector).normalized()
+
+        let q = Quaternion.makeRotation(radians: angle, axis: rotationAxis)
+
+        do
         {
-            SimpleLogs.ERROR("View direction can't be aligned to the UP vector.")
-            return
+            self.forward = viewVector
+            self.right   = try SLA.rotate(vector: self.right, quaternion: q).normalized()
+            self.up      = self.forward.cross(self.right)
         }
-
-        self.forward = viewVector.normalized()
-        self.right   = self.up.cross(self.forward).normalized()
-        self.up      = self.forward.cross(self.right)
+        catch
+        {
+            SimpleLogs.WARNING("Failed to re-orient. Reason: \(error)");
+        }
     }
 
     // MARK: - Private
