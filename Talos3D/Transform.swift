@@ -7,6 +7,14 @@
 import SLA
 import SimpleLogs
 
+public enum Axis
+{
+    case X
+    case Y
+    case Z
+    case arbitrary(Vector3)
+}
+
 class Transform
 {
     // MARK: - Public
@@ -54,24 +62,47 @@ class Transform
     public func setScale(_ newScale: Vector3)   { self.scale = newScale }
     public func scale(by factor: Float)         { self.scale *= factor }
 
-    public func rotate(eulerAngles: Vector3)
+    public func rotateAround(localAxis: Axis, radians: Float)
     {
-        let worldUp = Vector3(x:0, y:1, z:0)
+        var axis = Vector3.zero()
+        switch localAxis
+        {
+            case .X: axis = self.right
+            case .Y: axis = self.up
+            case .Z: axis = self.forward
+            case .arbitrary(let a): axis = a
+        }
 
+        let q = Quaternion.makeRotation(radians: radians, axis: axis)
+
+        self.accumulatedRotation = q * self.accumulatedRotation
+    }
+
+    public func rotateAround(worldAxis: Axis, radians: Float)
+    {
+        var axis = Vector3.zero()
+        switch worldAxis
+        {
+            case .X: axis = Vector3(x: 1, y: 0, z: 0)
+            case .Y: axis = Vector3(x: 0, y: 1, z: 0)
+            case .Z: axis = Vector3(x: 0, y: 0, z: 1)
+            case .arbitrary(let a): axis = a
+        }
+
+        let q = Quaternion.makeRotation(radians: radians, axis: axis)
+
+        self.accumulatedRotation = q * self.accumulatedRotation
+    }
+
+    // Rotation around local axis in the following order: X -> Z -> Y
+    public func rotate(localEulerAngles: Vector3)
+    {
         // Tilt / Pitch
-        let rotX = Quaternion.makeRotation(radians: SLA.deg2rad(eulerAngles.x),
-                                           axis:    self.right)
-        // Pan / Yaw
-        // Use the world's UP to avoid unwanted rolling
-        let rotY = Quaternion.makeRotation(radians: SLA.deg2rad(eulerAngles.y),
-                                           axis:    worldUp)
+        self.rotateAround(localAxis: .X, radians: deg2rad(localEulerAngles.x))
         // Roll
-        let rotZ = Quaternion.makeRotation(radians: SLA.deg2rad(eulerAngles.z),
-                                           axis:    self.forward)
-        // X -> Z -> Y
-        let R = rotY * rotZ * rotX
-
-        self.accumulatedRotation = R * self.accumulatedRotation
+        self.rotateAround(localAxis: .Z, radians: deg2rad(localEulerAngles.z))
+        // Pan / Yaw
+        self.rotateAround(worldAxis: .Y, radians: deg2rad(localEulerAngles.y))
     }
 
     public func lookAt(_ target: Vector3)
@@ -99,19 +130,18 @@ class Transform
     {
         if self.accumulatedRotation == Quaternion.identity() { return }
 
-        let rotation = self.accumulatedRotation
-        self.accumulatedRotation = Quaternion.identity()
-
         do
         {
-            self.right      = try SLA.rotate(vector: self.right,    quaternion: rotation)
-            self.up         = try SLA.rotate(vector: self.up,       quaternion: rotation)
-            self.forward    = try SLA.rotate(vector: self.forward,  quaternion: rotation)
+            self.right      = try SLA.rotate(vector: self.right,    quaternion: self.accumulatedRotation)
+            self.up         = try SLA.rotate(vector: self.up,       quaternion: self.accumulatedRotation)
+            self.forward    = try SLA.rotate(vector: self.forward,  quaternion: self.accumulatedRotation)
         }
         catch
         {
             SimpleLogs.WARNING("Failed to apply rotation. Reason: \(error)")
         }
+
+        self.accumulatedRotation = Quaternion.identity()
     }
 
     private var forward:  Vector3

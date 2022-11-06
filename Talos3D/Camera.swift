@@ -52,9 +52,21 @@ class Camera: Mobile
         self.updateView()
     }
 
-    public func rotate(eulerAngles: Vector3)
+    public func rotate(localEulerAngles: Vector3)
     {
-        self.transform.rotate(eulerAngles: eulerAngles)
+        self.transform.rotate(localEulerAngles: localEulerAngles)
+        self.updateView()
+    }
+
+    public func rotateAround(localAxis: Axis, radians: Float)
+    {
+        self.transform.rotateAround(localAxis: localAxis, radians: radians)
+        self.updateView()
+    }
+
+    public func rotateAround(worldAxis: Axis, radians: Float)
+    {
+        self.transform.rotateAround(worldAxis: worldAxis, radians: radians)
         self.updateView()
     }
 

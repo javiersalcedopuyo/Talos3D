@@ -106,7 +106,22 @@ public class Model : Renderable
     }
 
     public func move(to position: Vector3)      { mTransform.move(to: position) }
-    public func rotate(eulerAngles: Vector3)    { mTransform.rotate(eulerAngles: eulerAngles) }
+
+    public func rotate(localEulerAngles : Vector3)
+    {
+        mTransform.rotate(localEulerAngles: localEulerAngles)
+    }
+
+    public func rotateAround(localAxis: Axis, radians: Float)
+    {
+        mTransform.rotateAround(localAxis: localAxis, radians: radians)
+    }
+
+    public func rotateAround(worldAxis: Axis, radians: Float)
+    {
+        mTransform.rotateAround(worldAxis: worldAxis, radians: radians)
+    }
+
     public func lookAt(_ target: Vector3)       { mTransform.lookAt(target) }
     public func getPosition() -> Vector3        { mTransform.position }
     public func getRotation() -> Vector3        { mTransform.getEulerAngles() }

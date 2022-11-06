@@ -16,7 +16,7 @@ class TransformTests: XCTestCase
         let t1 = Transform()
         let t2 = Transform()
         let rotation = Vector3(x: 90, y: 0, z: 0)
-        t1.rotate(eulerAngles: rotation)
+        t1.rotate(localEulerAngles: rotation)
 
         XCTAssertEqual(t1.getRight(), t2.getRight())
         XCTAssertEqual(t1.getUp().dot(t2.getUp()), 0, accuracy: 0.0002)
@@ -28,7 +28,7 @@ class TransformTests: XCTestCase
         let t1 = Transform()
         let t2 = Transform()
         let rotation = Vector3(x: 0, y: 90, z: 0)
-        t1.rotate(eulerAngles: rotation)
+        t1.rotate(localEulerAngles: rotation)
 
         XCTAssertEqual(t1.getUp(), t2.getUp())
         XCTAssertEqual(t1.getForward().dot(t2.getForward()), 0, accuracy: 0.0002)
@@ -40,7 +40,7 @@ class TransformTests: XCTestCase
         let t1 = Transform()
         let t2 = Transform()
         let rotation = Vector3(x: 0, y: 0, z: 90)
-        t1.rotate(eulerAngles: rotation)
+        t1.rotate(localEulerAngles: rotation)
 
         XCTAssertEqual(t1.getForward(), t2.getForward())
         XCTAssertEqual(t1.getUp().dot(t2.getUp()), 0, accuracy: 0.0002)
@@ -52,8 +52,8 @@ class TransformTests: XCTestCase
         let t1 = Transform()
         let t2 = Transform()
         let rotation = Vector3(x: 45, y: 0, z: 0)
-        t1.rotate(eulerAngles: rotation)
-        t1.rotate(eulerAngles: rotation)
+        t1.rotate(localEulerAngles: rotation)
+        t1.rotate(localEulerAngles: rotation)
 
         XCTAssertEqual(t1.getRight(), t2.getRight())
         XCTAssertEqual(t1.getUp().dot(t2.getUp()), 0, accuracy: 0.0002)
@@ -65,8 +65,8 @@ class TransformTests: XCTestCase
         let t1 = Transform()
         let t2 = Transform()
         let rotation = Vector3(x: 0, y: 45, z: 0)
-        t1.rotate(eulerAngles: rotation)
-        t1.rotate(eulerAngles: rotation)
+        t1.rotate(localEulerAngles: rotation)
+        t1.rotate(localEulerAngles: rotation)
 
         XCTAssertEqual(t1.getUp(), t2.getUp())
         XCTAssertEqual(t1.getForward().dot(t2.getForward()), 0, accuracy: 0.0002)
@@ -78,8 +78,8 @@ class TransformTests: XCTestCase
         let t1 = Transform()
         let t2 = Transform()
         let rotation = Vector3(x: 0, y: 0, z: 45)
-        t1.rotate(eulerAngles: rotation)
-        t1.rotate(eulerAngles: rotation)
+        t1.rotate(localEulerAngles: rotation)
+        t1.rotate(localEulerAngles: rotation)
 
         XCTAssertEqual(t1.getForward(), t2.getForward())
         XCTAssertEqual(t1.getUp().dot(t2.getUp()), 0, accuracy: 0.0002)

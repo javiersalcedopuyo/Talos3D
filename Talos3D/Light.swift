@@ -64,7 +64,23 @@ class DirectionalLight : LightSource
 
     // MARK: Positionable methods
     public func move(to: Vector3)               { self.transform.move(to: to) }
-    public func rotate(eulerAngles: Vector3)    { self.transform.rotate(eulerAngles: eulerAngles) }
+
+    public func rotate(localEulerAngles: Vector3)
+    {
+        self.transform.rotate(localEulerAngles: localEulerAngles)
+
+    }
+
+    public func rotateAround(localAxis: Axis, radians: Float)
+    {
+        self.transform.rotateAround(localAxis: localAxis, radians: radians)
+    }
+
+    public func rotateAround(worldAxis: Axis, radians: Float)
+    {
+        self.transform.rotateAround(worldAxis: worldAxis, radians: radians)
+    }
+
     public func lookAt(_ target: Vector3)       { self.transform.lookAt(target) }
     public func getPosition() -> Vector3        { self.transform.position }
     public func getRotation() -> Vector3        { self.transform.getEulerAngles() }

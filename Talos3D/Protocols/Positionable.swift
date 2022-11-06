@@ -11,7 +11,7 @@ import SLA
 protocol Positionable
 {
     func move(to: Vector3)
-    func rotate(eulerAngles: Vector3)
+    func rotate(localEulerAngles: Vector3)
     func lookAt(_ target: Vector3)
 
     func getPosition() -> Vector3

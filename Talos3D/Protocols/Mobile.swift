@@ -14,6 +14,4 @@ protocol Mobile: Positionable
     var rotateSpeed: Float {get set}
 
     mutating func move(localDirection: Vector3)
-    mutating func rotate(eulerAngles: Vector3)
-    // TODO: mutating func rotate(quaternion: Quaternion)
 }

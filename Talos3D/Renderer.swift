@@ -79,10 +79,8 @@ public class Renderer: NSObject, MTKViewDelegate
 
     public func onMouseDrag(deltaX: Float, deltaY: Float)
     {
-        let d = Vector3(x: deltaY, y: deltaX, z: 0)
-        self.scene
-            .mainCamera
-            .rotate(eulerAngles: d)
+        self.scene.mainCamera.rotateAround(localAxis: .X, radians: deg2rad(deltaY))
+        self.scene.mainCamera.rotateAround(worldAxis: .Y, radians: deg2rad(deltaX))
     }
 
     public func onScroll(scroll: Float)
@@ -305,7 +303,7 @@ public class Renderer: NSObject, MTKViewDelegate
                               material: self.materials[TEST_MATERIAL_NAME_1] ?? self.defaultMaterial)
 
             let rotDegrees = SLA.rad2deg(0.5 * TAU)
-            model.rotate(eulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
+            model.rotate(localEulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
             // model.flipHandedness()
 
             sceneBuilder.add(object: model)
