@@ -28,12 +28,14 @@ class Transform
         forward  = Vector3(x:0, y:0, z:1)
     }
 
-    public func getForward() -> Vector3 { return self.forward }
-    public func getUp()      -> Vector3 { return self.up }
-    public func getRight()   -> Vector3 { return self.right }
+    public func getForward() -> Vector3 { applyAccumulatedRotation(); return self.forward }
+    public func getUp()      -> Vector3 { applyAccumulatedRotation(); return self.up }
+    public func getRight()   -> Vector3 { applyAccumulatedRotation(); return self.right }
 
     public func getLocalToWorldMatrix() -> Matrix4x4
     {
+        applyAccumulatedRotation()
+
         let X = Vector4(self.right      * self.scale.x, 0)
         let Y = Vector4(self.up         * self.scale.y, 0)
         let Z = Vector4(self.forward    * self.scale.z, 0)
@@ -54,32 +56,23 @@ class Transform
 
     public func rotate(eulerAngles: Vector3)
     {
-        // Tilt
+        let worldUp = Vector3(x:0, y:1, z:0)
+
+        // Tilt / Pitch
         let rotX = Quaternion.makeRotation(radians: SLA.deg2rad(eulerAngles.x),
                                            axis:    self.right)
-        // Pan
+        // Pan / Yaw
+        // Use the world's UP to avoid unwanted rolling
         let rotY = Quaternion.makeRotation(radians: SLA.deg2rad(eulerAngles.y),
-                                           axis:    self.up)
+                                           axis:    worldUp)
         // Roll
         let rotZ = Quaternion.makeRotation(radians: SLA.deg2rad(eulerAngles.z),
                                            axis:    self.forward)
+        // X -> Z -> Y
+        let R = rotY * rotZ * rotX
 
-        let R = rotX * rotY * rotZ
-
-        let worldUp = Vector3(x:0, y:1, z:0)
-
-        do
-        {
-            self.forward = try SLA.rotate(vector: self.forward, quaternion: R).normalized() // Is it really necessary to normalize?
-            self.right   = worldUp.cross(self.forward).normalized()
-            self.up      = self.forward.cross( self.right )
-        }
-        catch
-        {
-            SimpleLogs.WARNING("Failed to apply rotation. Reason: \(error)")
-        }
+        self.accumulatedRotation = R * self.accumulatedRotation
     }
-    // TODO: public func rotate(q: Quaterion)
 
     public func lookAt(_ target: Vector3)
     {
@@ -98,23 +91,34 @@ class Transform
 
         let q = Quaternion.makeRotation(radians: angle, axis: rotationAxis)
 
-        do
-        {
-            self.forward = viewVector
-            self.right   = try SLA.rotate(vector: self.right, quaternion: q).normalized()
-            self.up      = self.forward.cross(self.right)
-        }
-        catch
-        {
-            SimpleLogs.WARNING("Failed to re-orient. Reason: \(error)");
-        }
+        self.accumulatedRotation = q * self.accumulatedRotation
     }
 
     // MARK: - Private
+    private func applyAccumulatedRotation()
+    {
+        if self.accumulatedRotation == Quaternion.identity() { return }
+
+        let rotation = self.accumulatedRotation
+        self.accumulatedRotation = Quaternion.identity()
+
+        do
+        {
+            self.right      = try SLA.rotate(vector: self.right,    quaternion: rotation)
+            self.up         = try SLA.rotate(vector: self.up,       quaternion: rotation)
+            self.forward    = try SLA.rotate(vector: self.forward,  quaternion: rotation)
+        }
+        catch
+        {
+            SimpleLogs.WARNING("Failed to apply rotation. Reason: \(error)")
+        }
+    }
+
     private var forward:  Vector3
     private var up:       Vector3
     private var right:    Vector3
 
     private var eulerAngles: Vector3
+    private var accumulatedRotation = Quaternion.identity()
     // TODO: private var rotQuaternion: Quaternion
 }
