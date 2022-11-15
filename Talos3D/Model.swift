@@ -93,7 +93,7 @@ public class Model : Renderable
         // Normals
         desc.attributes[NORMAL].format        = .float3
         desc.attributes[NORMAL].bufferIndex   = VERTEX_BUFFER_INDEX
-        desc.attributes[NORMAL].offset        = MemoryLayout<SIMD3<Float>>.stride
+        desc.attributes[NORMAL].offset        = MemoryLayout<SIMD3<Float>>.stride * 2
         // UVs
         desc.attributes[TEXCOORD].format      = .float2
         desc.attributes[TEXCOORD].bufferIndex = VERTEX_BUFFER_INDEX
