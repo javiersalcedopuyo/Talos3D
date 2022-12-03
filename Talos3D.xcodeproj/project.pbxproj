@@ -33,6 +33,7 @@
 		859CEA45277E45A9001D07B7 /* MainShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 859CEA44277E45A9001D07B7 /* MainShaders.metal */; };
 		859CEA49277E4763001D07B7 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 859CEA48277E4763001D07B7 /* Model.swift */; };
 		859CEA4E277E4D4F001D07B7 /* bunny.obj in Resources */ = {isa = PBXBuildFile; fileRef = 859CEA4D277E4B63001D07B7 /* bunny.obj */; };
+		85B0DC4F292442DD00E7E8F7 /* quad.obj in Resources */ = {isa = PBXBuildFile; fileRef = 85B0DC4E292442DD00E7E8F7 /* quad.obj */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,6 +75,7 @@
 		859CEA44277E45A9001D07B7 /* MainShaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = MainShaders.metal; sourceTree = "<group>"; };
 		859CEA48277E4763001D07B7 /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
 		859CEA4D277E4B63001D07B7 /* bunny.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = bunny.obj; sourceTree = "<group>"; };
+		85B0DC4E292442DD00E7E8F7 /* quad.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = quad.obj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -169,6 +171,7 @@
 		859CEA4C277E4B5F001D07B7 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				85B0DC4E292442DD00E7E8F7 /* quad.obj */,
 				854D844628C512FA00B70916 /* teapot.obj */,
 				859CEA4D277E4B63001D07B7 /* bunny.obj */,
 			);
@@ -283,6 +286,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				854D844728C512FA00B70916 /* teapot.obj in Resources */,
+				85B0DC4F292442DD00E7E8F7 /* quad.obj in Resources */,
 				859CEA30277DE362001D07B7 /* Assets.xcassets in Resources */,
 				859CEA33277DE362001D07B7 /* Main.storyboard in Resources */,
 				859CEA4E277E4D4F001D07B7 /* bunny.obj in Resources */,
