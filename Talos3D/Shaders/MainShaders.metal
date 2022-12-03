@@ -72,13 +72,12 @@ float4 fragment_main(VertexOut        frag [[ stage_in ]],
 
     auto diffuse = light.color * light.intensity * lambertian;
 
-    auto ambient = float3(0.1f);
+    auto ambient = float3(0.2f);
 
     // TODO: Specular
 
     auto o = float4(0);
-    o.rgb += albedo.rgb * diffuse.rgb +
-             ambient;
+    o.rgb += albedo.rgb * (diffuse.rgb + ambient);
 
     // Debug normals
 //    o.xyz = (frag.normal + 1.f) * 0.5f;
