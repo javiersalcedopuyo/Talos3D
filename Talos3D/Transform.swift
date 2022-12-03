@@ -132,9 +132,9 @@ class Transform
 
         do
         {
-            self.right      = try SLA.rotate(vector: self.right,    quaternion: self.accumulatedRotation)
-            self.up         = try SLA.rotate(vector: self.up,       quaternion: self.accumulatedRotation)
-            self.forward    = try SLA.rotate(vector: self.forward,  quaternion: self.accumulatedRotation)
+            self.right      = try SLA.rotate(vector: self.right,    quaternion: self.accumulatedRotation).normalized()
+            self.up         = try SLA.rotate(vector: self.up,       quaternion: self.accumulatedRotation).normalized()
+            self.forward    = try SLA.rotate(vector: self.forward,  quaternion: self.accumulatedRotation).normalized()
         }
         catch
         {
