@@ -51,7 +51,7 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             fatalError("Could not create command queue")
         }
-        mCommandQueue = cq
+        commandQueue = cq
 
         (self.defaultPipeline, self.mainPipeline) = Self.createPipelines(view: mView)
 
@@ -130,8 +130,38 @@ public class Renderer: NSObject, MTKViewDelegate
 
     func update()
     {
+        self.beginFrame()
+
         self.render()
+
+        self.endFrame()
+
         self.countAndDisplayFPS()
+    }
+
+    // TODO: Double/Triple buffer
+    func beginFrame()
+    {
+        if self.currentCommandBuffer != nil
+        {
+            SimpleLogs.WARNING("There's a command buffer in use currently. endFrame() will be called. This can impact performance.")
+            self.endFrame()
+        }
+        self.currentCommandBuffer = self.commandQueue.makeCommandBuffer()
+    }
+
+    func endFrame()
+    {
+        guard let cb = self.currentCommandBuffer else
+        {
+            SimpleLogs.WARNING("There's no command buffer in use. Did you forget to call beginFrame()?")
+            return
+        }
+
+        cb.present(mView.currentDrawable!)
+        cb.commit()
+
+        self.currentCommandBuffer = nil // ARC should take care of deallocating this
     }
 
     func render()
@@ -139,8 +169,7 @@ public class Renderer: NSObject, MTKViewDelegate
         let view = self.scene.mainCamera.getView()
         let proj = self.scene.mainCamera.getProjection()
 
-        let commandBuffer  = mCommandQueue.makeCommandBuffer()!
-        let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: mView.currentRenderPassDescriptor!)
+        let commandEncoder = self.currentCommandBuffer?.makeRenderCommandEncoder(descriptor: mView.currentRenderPassDescriptor!)
         commandEncoder?.setDepthStencilState(mDepthStencilState)
         commandEncoder?.setCullMode(.back)
 
@@ -209,9 +238,6 @@ public class Renderer: NSObject, MTKViewDelegate
         }
 
         commandEncoder?.endEncoding()
-
-        commandBuffer.present(mView.currentDrawable!)
-        commandBuffer.commit()
     }
 
     public var mView: MTKView
@@ -409,7 +435,9 @@ public class Renderer: NSObject, MTKViewDelegate
         }
     }
 
-    private let mCommandQueue:  MTLCommandQueue
+    private let commandQueue:  MTLCommandQueue
+    private var currentCommandBuffer: MTLCommandBuffer?
+
     // TODO: pipeline cache
     private let mainPipeline: Pipeline
     private let defaultPipeline: Pipeline
