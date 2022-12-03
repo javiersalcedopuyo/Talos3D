@@ -22,6 +22,7 @@ let WORLD_UP = Vector3(x:0, y:1, z:0)
 
 let BUNNY_MODEL_NAME        = "bunny"
 let TEAPOT_MODEL_NAME       = "teapot"
+let QUAD_MODEL_NAME         = "quad"
 let OBJ_FILE_EXTENSION      = "obj"
 
 let TEST_TEXTURE_NAME_1     = "TestTexture1"
@@ -280,12 +281,16 @@ public class Renderer: NSObject, MTKViewDelegate
     private func buildScene(device: MTLDevice)
     {
         let cam = Camera()
-        cam.move(to: Vector3(x:0.5, y:0.25, z:-0.6))
-        cam.lookAt(Vector3(x:0.2, y:0.1, z:0))
+        cam.move(to: Vector3(x:0, y:0.25, z:-0.6))
+        cam.lookAt(Vector3.zero())
+
+        let light = DirectionalLight();
+        light.rotateAround(worldAxis: .X, radians: TAU * 0.25)
+        light.rotateAround(worldAxis: .Z, radians: deg2rad(30))
 
         let sceneBuilder = SceneBuilder()
                             .add(camera: cam)
-                            .add(light: DirectionalLight())
+                            .add(light: light)
 
         self.loadModelsIntoScene(device: device, sceneBuilder: sceneBuilder)
 
@@ -295,6 +300,7 @@ public class Renderer: NSObject, MTKViewDelegate
     // TODO: Read model and transform data from file
     private func loadModelsIntoScene(device: MTLDevice, sceneBuilder: SceneBuilder)
     {
+        // BUNNY
         if let modelURL = Bundle.main.url(forResource: BUNNY_MODEL_NAME,
                                           withExtension: OBJ_FILE_EXTENSION)
         {
@@ -304,6 +310,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
             let rotDegrees = SLA.rad2deg(0.5 * TAU)
             model.rotate(localEulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
+            model.move(to: Vector3(x:-0.15, y:0, z:0))
             // model.flipHandedness()
 
             sceneBuilder.add(object: model)
@@ -313,6 +320,7 @@ public class Renderer: NSObject, MTKViewDelegate
             SimpleLogs.ERROR("Couldn't load model '" + BUNNY_MODEL_NAME + "." + OBJ_FILE_EXTENSION + "'")
         }
 
+        // TEAPOT
         if let modelURL = Bundle.main.url(forResource: TEAPOT_MODEL_NAME,
                                           withExtension: OBJ_FILE_EXTENSION)
         {
@@ -321,13 +329,28 @@ public class Renderer: NSObject, MTKViewDelegate
                               material: self.materials[TEST_MATERIAL_NAME_2] ?? self.defaultMaterial)
 
             model.scale(by: 0.01)
-            model.move(to: Vector3(x:0.35, y:0.075, z:0))
+            model.move(to: Vector3(x:0.15, y:0.075, z:0))
 
             sceneBuilder.add(object: model)
         }
         else
         {
             SimpleLogs.ERROR("Couldn't load model '" + TEAPOT_MODEL_NAME + "." + OBJ_FILE_EXTENSION + "'")
+        }
+
+        // FLOOR
+        if let modelURL = Bundle.main.url(forResource: QUAD_MODEL_NAME,
+                                          withExtension: OBJ_FILE_EXTENSION)
+        {
+            let model = Model(device: device,
+                              url: modelURL,
+                              material: self.materials[TEST_MATERIAL_NAME_2] ?? self.defaultMaterial)
+
+            sceneBuilder.add(object: model)
+        }
+        else
+        {
+            SimpleLogs.ERROR("Couldn't load model '" + QUAD_MODEL_NAME + "." + OBJ_FILE_EXTENSION + "'")
         }
     }
 
