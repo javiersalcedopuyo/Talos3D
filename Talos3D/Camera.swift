@@ -32,6 +32,8 @@ class Camera: Mobile
         self.updateProjection()
     }
 
+    public func getNear()       -> Float        { self.near }
+    public func getFar()        -> Float        { self.far }
     public func getView()       -> Matrix4x4    { self.view }
     public func getProjection() -> Matrix4x4    { self.projection }
     public func getPosition()   -> Vector3      { self.transform.position }
@@ -91,7 +93,7 @@ class Camera: Mobile
         let t = self.transform
         self.view = Matrix4x4.lookAtLH(eye:    t.position,
                                        target: t.position + t.getForward(),
-                                       upAxis: t.getUp())
+                                       upAxis: Vector3(x:0, y:1, z:0)) // World's UP
     }
 
     private func updateProjection()

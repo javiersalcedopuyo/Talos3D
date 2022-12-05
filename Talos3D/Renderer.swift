@@ -15,8 +15,10 @@ let VERTEX_BUFFER_INDEX         = BufferIndices.VERTICES.rawValue
 let SCENE_MATRICES_INDEX        = BufferIndices.SCENE_MATRICES.rawValue
 let OBJECT_MATRICES_INDEX       = BufferIndices.OBJECT_MATRICES.rawValue
 let LIGHTS_BUFFER_INDEX         = BufferIndices.LIGHTS.rawValue
+let LIGHT_MATRIX_INDEX          = BufferIndices.LIGHT_MATRIX.rawValue
 
 let ALBEDO_MAP_INDEX            = TextureIndices.ALBEDO.rawValue
+let SHADOW_MAP_INDEX            = TextureIndices.SHADOW_MAP.rawValue
 
 let WORLD_UP = Vector3(x:0, y:1, z:0)
 
@@ -54,6 +56,7 @@ public class Renderer: NSObject, MTKViewDelegate
         commandQueue = cq
 
         (self.defaultPipeline, self.mainPipeline) = Self.createPipelines(view: mView)
+        self.shadowPipeline = Self.createShadowPipeline(view: mView)
 
         self.defaultMaterial = Material(pipeline: self.defaultPipeline)
 
@@ -132,7 +135,8 @@ public class Renderer: NSObject, MTKViewDelegate
     {
         self.beginFrame()
 
-        self.render()
+        self.renderShadowMap()
+        self.renderScene()
 
         self.endFrame()
 
@@ -164,14 +168,90 @@ public class Renderer: NSObject, MTKViewDelegate
         self.currentCommandBuffer = nil // ARC should take care of deallocating this
     }
 
-    func render()
+    func renderShadowMap()
+    {
+        guard let device = self.mView.device else
+        {
+            fatalError("No device")
+        }
+
+        // TODO: Move this out so it's not done every frame
+        let shadowMapDesc = MTLTextureDescriptor()
+        shadowMapDesc.width = 512
+        shadowMapDesc.height = 512
+        shadowMapDesc.pixelFormat = mView.depthStencilPixelFormat
+        shadowMapDesc.storageMode = .private
+        shadowMapDesc.usage = [.renderTarget, .shaderRead]
+
+        self.shadowMap = device.makeTexture(descriptor: shadowMapDesc)
+        if self.shadowMap == nil
+        {
+            SimpleLogs.ERROR("Couldn't create the depth buffer")
+        }
+        self.shadowMap?.label = "Shadow Map"
+
+        let renderPassDesc = MTLRenderPassDescriptor()
+        renderPassDesc.depthAttachment.texture = self.shadowMap!
+        renderPassDesc.depthAttachment.storeAction = .store
+
+        // TODO: Adapt this to multiple lights
+        let view = self.scene.lights[0].getView()
+        let proj = Matrix4x4.orthographicLH(width: 2,
+                                            height: 2,
+                                            near: 0.1,
+                                            far: scene.mainCamera.getFar())
+
+        let commandEncoder = self.currentCommandBuffer?.makeRenderCommandEncoder(descriptor: renderPassDesc)
+        commandEncoder?.label = "Shadow pass"
+        commandEncoder?.setDepthStencilState(mDepthStencilState)
+        commandEncoder?.setCullMode(.none)
+
+        // Set Scene buffers
+        commandEncoder?.setVertexBytes(view.asPackedArray() + proj.asPackedArray(),
+                                       length: Matrix4x4.size() * 2,
+                                       index: SCENE_MATRICES_INDEX)
+
+        // TODO: Extract renderModel()
+        for model in self.scene.objects
+        {
+            let modelMatrix  = model.getModelMatrix()
+            let normalMatrix = model.getNormalMatrix()
+
+            commandEncoder?.setRenderPipelineState(self.shadowPipeline.state)
+            commandEncoder?.setFrontFacing(model.getWinding())
+
+            // Set buffers
+            commandEncoder?.setVertexBuffer(model.getVertexBuffer(),
+                                            offset: 0,
+                                            index: VERTEX_BUFFER_INDEX)
+
+            commandEncoder?.setVertexBytes(modelMatrix.asPackedArray() +
+                                           normalMatrix.asPackedArray(),
+                                           length: Matrix4x4.size() * 2,
+                                           index: OBJECT_MATRICES_INDEX)
+
+            // Draw
+            for submesh in model.getMesh().submeshes
+            {
+                commandEncoder?.drawIndexedPrimitives(type: submesh.primitiveType,
+                                                      indexCount: submesh.indexCount,
+                                                      indexType: submesh.indexType,
+                                                      indexBuffer: submesh.indexBuffer.buffer,
+                                                      indexBufferOffset: submesh.indexBuffer.offset)
+            }
+        }
+        commandEncoder?.endEncoding()
+    }
+
+    func renderScene()
     {
         let view = self.scene.mainCamera.getView()
         let proj = self.scene.mainCamera.getProjection()
 
         let commandEncoder = self.currentCommandBuffer?.makeRenderCommandEncoder(descriptor: mView.currentRenderPassDescriptor!)
+        commandEncoder?.label = "Main pass"
         commandEncoder?.setDepthStencilState(mDepthStencilState)
-        commandEncoder?.setCullMode(.back)
+        commandEncoder?.setCullMode(.none)
 
         // Set Scene buffers
         commandEncoder?.setVertexBytes(view.asPackedArray() + proj.asPackedArray(),
@@ -186,6 +266,21 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder?.setFragmentBytes(dirLight.getBufferData(),
                                          length: dirLight.getBufferSize(),
                                          index: LIGHTS_BUFFER_INDEX)
+
+        let lightProj = Matrix4x4.orthographicLH(width: 2,
+                                                 height: 2,
+                                                 near: 0.1,
+                                                 far: scene.mainCamera.getFar())
+
+        let lightMatrix = lightProj * dirLight.getView() // Inverse View?
+        commandEncoder?.setVertexBytes(lightMatrix.asPackedArray(),
+                                       length: Matrix4x4.size(),
+                                       index: LIGHT_MATRIX_INDEX)
+
+        if let sm = self.shadowMap
+        {
+            commandEncoder?.setFragmentTexture(sm, index: SHADOW_MAP_INDEX)
+        }
 
         // TODO: Extract renderModel()
         for model in self.scene.objects
@@ -243,6 +338,7 @@ public class Renderer: NSObject, MTKViewDelegate
     public var mView: MTKView
 
     // MARK: - Private
+    // TODO: Unify Pipeline creation
     static private func createPipelines(view: MTKView) -> (default: Pipeline, main: Pipeline)
     {
         guard let device = view.device else
@@ -282,6 +378,32 @@ public class Renderer: NSObject, MTKViewDelegate
         return (defaultPipeline, mainPipeline)
     }
 
+    static private func createShadowPipeline(view: MTKView) -> Pipeline
+    {
+        guard let device = view.device else
+        {
+            fatalError("No device")
+        }
+
+        guard let library = view.device?.makeDefaultLibrary() else
+        {
+            fatalError("Couldn't create shader library!")
+        }
+
+        // We don't need a fragment function or a color attachment because we just want the depth
+        let pipelineDescriptor = MTLRenderPipelineDescriptor()
+        pipelineDescriptor.label                           = "Shadow Pass PSO"
+        pipelineDescriptor.vertexFunction                  = library.makeFunction(name: "basic_vertex_main")
+        pipelineDescriptor.vertexDescriptor                = Model.getNewVertexDescriptor()
+        pipelineDescriptor.depthAttachmentPixelFormat      = view.depthStencilPixelFormat
+
+        guard let pipeline = Pipeline(desc: pipelineDescriptor, device: device) else
+        {
+            fatalError("Couldn't create default pipeline state")
+        }
+        return pipeline
+    }
+
     private func createMaterials(device: MTLDevice)
     {
         let material1 = Material(pipeline: self.mainPipeline)
@@ -311,8 +433,11 @@ public class Renderer: NSObject, MTKViewDelegate
         cam.lookAt(Vector3.zero())
 
         let light = DirectionalLight();
-        light.rotateAround(worldAxis: .X, radians: TAU * 0.25)
-        light.rotateAround(worldAxis: .Z, radians: deg2rad(30))
+//        light.rotateAround(worldAxis: .Y, radians: deg2rad(45))
+//        light.rotateAround(localAxis: .X, radians: deg2rad(30))
+//        light.move(to: -light.transform.getForward()) // For the shadow mapping
+        light.move(to: Vector3(x: -1, y: 1, z: -1))
+        light.lookAt(Vector3.zero())
 
         let sceneBuilder = SceneBuilder()
                             .add(camera: cam)
@@ -332,7 +457,7 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             let model = Model(device: device,
                               url: modelURL,
-                              material: self.materials[TEST_MATERIAL_NAME_1] ?? self.defaultMaterial)
+                              material: self.materials[TEST_MATERIAL_NAME_2] ?? self.defaultMaterial)
 
             let rotDegrees = SLA.rad2deg(0.5 * TAU)
             model.rotate(localEulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
@@ -370,7 +495,7 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             let model = Model(device: device,
                               url: modelURL,
-                              material: self.materials[TEST_MATERIAL_NAME_2] ?? self.defaultMaterial)
+                              material: self.materials[TEST_MATERIAL_NAME_1] ?? self.defaultMaterial)
 
             sceneBuilder.add(object: model)
         }
@@ -441,8 +566,12 @@ public class Renderer: NSObject, MTKViewDelegate
     // TODO: pipeline cache
     private let mainPipeline: Pipeline
     private let defaultPipeline: Pipeline
+    private let shadowPipeline: Pipeline
 
     private var mDepthStencilState: MTLDepthStencilState?
+
+    private var shadowMap: MTLTexture?
+    // TODO: dummy texture
 
     private var scene: Scene!
 
