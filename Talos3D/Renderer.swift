@@ -55,8 +55,9 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         commandQueue = cq
 
-        (self.defaultPipeline, self.mainPipeline) = Self.createPipelines(view: mView)
-        self.shadowPipeline = Self.createShadowPipeline(view: mView)
+        (self.defaultPipeline,
+         self.shadowPipeline,
+         self.mainPipeline) = Self.createPipelines(view: mView)
 
         self.defaultMaterial = Material(pipeline: self.defaultPipeline)
 
@@ -211,13 +212,14 @@ public class Renderer: NSObject, MTKViewDelegate
                                        length: Matrix4x4.size() * 2,
                                        index: SCENE_MATRICES_INDEX)
 
+        commandEncoder?.setRenderPipelineState(self.shadowPipeline.state)
+
         // TODO: Extract renderModel()
         for model in self.scene.objects
         {
             let modelMatrix  = model.getModelMatrix()
             let normalMatrix = model.getNormalMatrix()
 
-            commandEncoder?.setRenderPipelineState(self.shadowPipeline.state)
             commandEncoder?.setFrontFacing(model.getWinding())
 
             // Set buffers
@@ -338,8 +340,17 @@ public class Renderer: NSObject, MTKViewDelegate
     public var mView: MTKView
 
     // MARK: - Private
-    // TODO: Unify Pipeline creation
-    static private func createPipelines(view: MTKView) -> (default: Pipeline, main: Pipeline)
+    /// Creates the pipelines needed by the engine.
+    /// - Parameters:
+    ///     - view: the current MTKView
+    /// - Returns:
+    ///    - Default: Pipeline used by the default material (aka the material-missing pink material)
+    ///    - Shadow: Pipeline used to render the shadow map
+    ///    - Main: Pipeline used by the main render pass
+    // TODO: This is slowly getting out of control. Refactor.
+    static private func createPipelines(view: MTKView) -> (default: Pipeline,
+                                                           shadow: Pipeline,
+                                                           main: Pipeline)
     {
         guard let device = view.device else
         {
@@ -351,57 +362,39 @@ public class Renderer: NSObject, MTKViewDelegate
             fatalError("Couldn't create shader library!")
         }
 
-        let defaultVertFunc = library.makeFunction(name: "default_vertex_main")
-        let defaultFragFunc = library.makeFunction(name: "default_fragment_main")
-        let mainVertFunc    = library.makeFunction(name: "vertex_main")
-        let mainFragFunc    = library.makeFunction(name: "fragment_main")
-
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
-        pipelineDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
-        pipelineDescriptor.vertexFunction                  = defaultVertFunc
-        pipelineDescriptor.fragmentFunction                = defaultFragFunc
-        pipelineDescriptor.vertexDescriptor                = Model.getNewVertexDescriptor()
-        pipelineDescriptor.depthAttachmentPixelFormat      = view.depthStencilPixelFormat
+        pipelineDescriptor.label                            = "Default PSO"
+        pipelineDescriptor.colorAttachments[0].pixelFormat  = view.colorPixelFormat
+        pipelineDescriptor.vertexFunction                   = library.makeFunction(name: "default_vertex_main")
+        pipelineDescriptor.fragmentFunction                 = library.makeFunction(name: "default_fragment_main")
+        pipelineDescriptor.vertexDescriptor                 = Model.getNewVertexDescriptor()
+        pipelineDescriptor.depthAttachmentPixelFormat       = view.depthStencilPixelFormat
 
         guard let defaultPipeline = Pipeline(desc: pipelineDescriptor, device: device) else
         {
             fatalError("Couldn't create default pipeline state")
         }
 
-        pipelineDescriptor.vertexFunction   = mainVertFunc
-        pipelineDescriptor.fragmentFunction = mainFragFunc
+        pipelineDescriptor.label            = "Main PSO"
+        pipelineDescriptor.vertexFunction   = library.makeFunction(name: "vertex_main")
+        pipelineDescriptor.fragmentFunction = library.makeFunction(name: "fragment_main")
         guard let mainPipeline = Pipeline(desc: pipelineDescriptor, device: device) else
         {
             fatalError("Couldn't create main pipeline state")
         }
 
-        return (defaultPipeline, mainPipeline)
-    }
-
-    static private func createShadowPipeline(view: MTKView) -> Pipeline
-    {
-        guard let device = view.device else
+        pipelineDescriptor.label                            = "Shadow Pass PSO"
+        // We don't need a color attachment or a fragment function because we just want the depth
+        pipelineDescriptor.colorAttachments[0].pixelFormat  = .invalid
+        pipelineDescriptor.fragmentFunction                 = nil
+        pipelineDescriptor.vertexFunction                   = library.makeFunction(name: "basic_vertex_main")
+        pipelineDescriptor.vertexDescriptor                 = Model.getNewVertexDescriptor()
+        guard let shadowPipeline = Pipeline(desc: pipelineDescriptor, device: device) else
         {
-            fatalError("No device")
+            fatalError("Couldn't create shadow pipeline state")
         }
 
-        guard let library = view.device?.makeDefaultLibrary() else
-        {
-            fatalError("Couldn't create shader library!")
-        }
-
-        // We don't need a fragment function or a color attachment because we just want the depth
-        let pipelineDescriptor = MTLRenderPipelineDescriptor()
-        pipelineDescriptor.label                           = "Shadow Pass PSO"
-        pipelineDescriptor.vertexFunction                  = library.makeFunction(name: "basic_vertex_main")
-        pipelineDescriptor.vertexDescriptor                = Model.getNewVertexDescriptor()
-        pipelineDescriptor.depthAttachmentPixelFormat      = view.depthStencilPixelFormat
-
-        guard let pipeline = Pipeline(desc: pipelineDescriptor, device: device) else
-        {
-            fatalError("Couldn't create default pipeline state")
-        }
-        return pipeline
+        return (defaultPipeline, shadowPipeline, mainPipeline)
     }
 
     private func createMaterials(device: MTLDevice)
