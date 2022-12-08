@@ -9,12 +9,15 @@ import Metal
 
 class Pipeline
 {
-    init?(desc: MTLRenderPipelineDescriptor, device: MTLDevice)
+    init?(desc:     MTLRenderPipelineDescriptor,
+          device:   MTLDevice,
+          type t:   PassType)
     {
         do
         {
             descriptor = desc
             state = try device.makeRenderPipelineState(descriptor: desc)
+            type = t
         }
         catch
         {
@@ -25,4 +28,13 @@ class Pipeline
 
     let state:      MTLRenderPipelineState
     let descriptor: MTLRenderPipelineDescriptor
+    let type:       PassType
+}
+
+enum PassType
+{
+    case Shadows
+    case GBuffer
+    case ForwardLighting
+    case DeferredLighting
 }

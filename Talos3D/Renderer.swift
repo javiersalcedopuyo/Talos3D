@@ -202,47 +202,31 @@ public class Renderer: NSObject, MTKViewDelegate
                                             near: 0.1,
                                             far: scene.mainCamera.getFar())
 
-        let commandEncoder = self.currentCommandBuffer?.makeRenderCommandEncoder(descriptor: renderPassDesc)
-        commandEncoder?.label = "Shadow pass"
-        commandEncoder?.setDepthStencilState(mDepthStencilState)
-        commandEncoder?.setCullMode(.none)
+        guard let commandEncoder = self.currentCommandBuffer?
+                                       .makeRenderCommandEncoder(descriptor: renderPassDesc) else
+        {
+            SimpleLogs.ERROR("Couldn't create a command encoder. Skipping pass.")
+            return
+        }
+        commandEncoder.label = "Shadow pass"
+        commandEncoder.setDepthStencilState(mDepthStencilState)
+        commandEncoder.setCullMode(.none)
 
         // Set Scene buffers
-        commandEncoder?.setVertexBytes(view.asPackedArray() + proj.asPackedArray(),
-                                       length: Matrix4x4.size() * 2,
-                                       index: SCENE_MATRICES_INDEX)
+        commandEncoder.setVertexBytes(view.asPackedArray() + proj.asPackedArray(),
+                                      length: Matrix4x4.size() * 2,
+                                      index: SCENE_MATRICES_INDEX)
 
-        commandEncoder?.setRenderPipelineState(self.shadowPipeline.state)
+        // All objects in the shadow pass use the same PSO
+        commandEncoder.setRenderPipelineState(self.shadowPipeline.state)
 
-        // TODO: Extract renderModel()
         for model in self.scene.objects
         {
-            let modelMatrix  = model.getModelMatrix()
-            let normalMatrix = model.getNormalMatrix()
-
-            commandEncoder?.setFrontFacing(model.getWinding())
-
-            // Set buffers
-            commandEncoder?.setVertexBuffer(model.getVertexBuffer(),
-                                            offset: 0,
-                                            index: VERTEX_BUFFER_INDEX)
-
-            commandEncoder?.setVertexBytes(modelMatrix.asPackedArray() +
-                                           normalMatrix.asPackedArray(),
-                                           length: Matrix4x4.size() * 2,
-                                           index: OBJECT_MATRICES_INDEX)
-
-            // Draw
-            for submesh in model.getMesh().submeshes
-            {
-                commandEncoder?.drawIndexedPrimitives(type: submesh.primitiveType,
-                                                      indexCount: submesh.indexCount,
-                                                      indexType: submesh.indexType,
-                                                      indexBuffer: submesh.indexBuffer.buffer,
-                                                      indexBufferOffset: submesh.indexBuffer.offset)
-            }
+            encodeRenderCommand(encoder:    commandEncoder,
+                                object:     model,
+                                passType:   .Shadows)
         }
-        commandEncoder?.endEncoding()
+        commandEncoder.endEncoding()
     }
 
     func renderScene()
@@ -250,24 +234,38 @@ public class Renderer: NSObject, MTKViewDelegate
         let view = self.scene.mainCamera.getView()
         let proj = self.scene.mainCamera.getProjection()
 
-        let commandEncoder = self.currentCommandBuffer?.makeRenderCommandEncoder(descriptor: mView.currentRenderPassDescriptor!)
-        commandEncoder?.label = "Main pass"
-        commandEncoder?.setDepthStencilState(mDepthStencilState)
-        commandEncoder?.setCullMode(.none)
+        guard let renderPassDesc = mView.currentRenderPassDescriptor else
+        {
+            // TODO: Create a dedicated render pass descriptor
+            SimpleLogs.ERROR("No render pass descriptor. Skipping pass.")
+            return
+        }
+
+        guard let commandEncoder = self.currentCommandBuffer?
+                                       .makeRenderCommandEncoder(descriptor: renderPassDesc) else
+        {
+            SimpleLogs.ERROR("Couldn't creater a command encoder. Skipping pass.")
+            return
+        }
+
+        commandEncoder.label = "Main pass"
+
+        commandEncoder.setDepthStencilState(mDepthStencilState)
+        commandEncoder.setCullMode(.none) // TODO: Determine this in a per-model basis
 
         // Set Scene buffers
-        commandEncoder?.setVertexBytes(view.asPackedArray() + proj.asPackedArray(),
-                                       length: Matrix4x4.size() * 2,
-                                       index: SCENE_MATRICES_INDEX)
+        commandEncoder.setVertexBytes(view.asPackedArray() + proj.asPackedArray(),
+                                      length: Matrix4x4.size() * 2,
+                                      index: SCENE_MATRICES_INDEX)
 
-        commandEncoder?.setFragmentBytes(view.asPackedArray() + proj.asPackedArray(),
-                                         length: Matrix4x4.size() * 2,
+        commandEncoder.setFragmentBytes(view.asPackedArray() + proj.asPackedArray(),
+                                        length: Matrix4x4.size() * 2,
                                         index: SCENE_MATRICES_INDEX)
 
         let dirLight = self.scene.lights[0] // TODO: Multiple lights
-        commandEncoder?.setFragmentBytes(dirLight.getBufferData(),
-                                         length: dirLight.getBufferSize(),
-                                         index: LIGHTS_BUFFER_INDEX)
+        commandEncoder.setFragmentBytes(dirLight.getBufferData(),
+                                        length: dirLight.getBufferSize(),
+                                        index: LIGHTS_BUFFER_INDEX)
 
         let lightProj = Matrix4x4.orthographicLH(width: 2,
                                                  height: 2,
@@ -275,66 +273,23 @@ public class Renderer: NSObject, MTKViewDelegate
                                                  far: scene.mainCamera.getFar())
 
         let lightMatrix = lightProj * dirLight.getView() // Inverse View?
-        commandEncoder?.setVertexBytes(lightMatrix.asPackedArray(),
-                                       length: Matrix4x4.size(),
-                                       index: LIGHT_MATRIX_INDEX)
+        commandEncoder.setVertexBytes(lightMatrix.asPackedArray(),
+                                      length: Matrix4x4.size(),
+                                      index: LIGHT_MATRIX_INDEX)
 
         if let sm = self.shadowMap
         {
-            commandEncoder?.setFragmentTexture(sm, index: SHADOW_MAP_INDEX)
+            commandEncoder.setFragmentTexture(sm, index: SHADOW_MAP_INDEX)
         }
 
-        // TODO: Extract renderModel()
         for model in self.scene.objects
         {
-            let modelMatrix  = model.getModelMatrix()
-            let normalMatrix = model.getNormalMatrix()
-
-            let material = model.getMaterial()
-            commandEncoder?.setRenderPipelineState(material.pipeline.state)
-            commandEncoder?.setFrontFacing(model.getWinding())
-
-            // Set buffers
-            commandEncoder?.setVertexBuffer(model.getVertexBuffer(),
-                                            offset: 0,
-                                            index: VERTEX_BUFFER_INDEX)
-
-            commandEncoder?.setVertexBytes(modelMatrix.asPackedArray() +
-                                           normalMatrix.asPackedArray(),
-                                           length: Matrix4x4.size() * 2,
-                                           index: OBJECT_MATRICES_INDEX)
-
-            commandEncoder?.setFragmentBytes(modelMatrix.asPackedArray() +
-                                             normalMatrix.asPackedArray(),
-                                             length: Matrix4x4.size() * 2,
-                                             index: OBJECT_MATRICES_INDEX)
-            // Set Textures
-            for texture in material.textures
-            {
-                if let idx = texture.getIndexAtStage(.Vertex)
-                {
-                    commandEncoder?.setVertexTexture((texture.getResource() as! MTLTexture),
-                                                     index: idx)
-                }
-                if let idx = texture.getIndexAtStage(.Fragment)
-                {
-                    commandEncoder?.setFragmentTexture((texture.getResource() as! MTLTexture),
-                                                       index: idx)
-                }
-            }
-
-            // Draw
-            for submesh in model.getMesh().submeshes
-            {
-                commandEncoder?.drawIndexedPrimitives(type: submesh.primitiveType,
-                                                      indexCount: submesh.indexCount,
-                                                      indexType: submesh.indexType,
-                                                      indexBuffer: submesh.indexBuffer.buffer,
-                                                      indexBufferOffset: submesh.indexBuffer.offset)
-            }
+            encodeRenderCommand(encoder:    commandEncoder,
+                                object:      model,
+                                passType:   .ForwardLighting)
         }
 
-        commandEncoder?.endEncoding()
+        commandEncoder.endEncoding()
     }
 
     public var mView: MTKView
@@ -370,7 +325,9 @@ public class Renderer: NSObject, MTKViewDelegate
         pipelineDescriptor.vertexDescriptor                 = Model.getNewVertexDescriptor()
         pipelineDescriptor.depthAttachmentPixelFormat       = view.depthStencilPixelFormat
 
-        guard let defaultPipeline = Pipeline(desc: pipelineDescriptor, device: device) else
+        guard let defaultPipeline = Pipeline(desc: pipelineDescriptor,
+                                             device: device,
+                                             type: .ForwardLighting) else
         {
             fatalError("Couldn't create default pipeline state")
         }
@@ -378,7 +335,9 @@ public class Renderer: NSObject, MTKViewDelegate
         pipelineDescriptor.label            = "Main PSO"
         pipelineDescriptor.vertexFunction   = library.makeFunction(name: "vertex_main")
         pipelineDescriptor.fragmentFunction = library.makeFunction(name: "fragment_main")
-        guard let mainPipeline = Pipeline(desc: pipelineDescriptor, device: device) else
+        guard let mainPipeline = Pipeline(desc: pipelineDescriptor,
+                                          device: device,
+                                          type: .ForwardLighting) else
         {
             fatalError("Couldn't create main pipeline state")
         }
@@ -389,7 +348,9 @@ public class Renderer: NSObject, MTKViewDelegate
         pipelineDescriptor.fragmentFunction                 = nil
         pipelineDescriptor.vertexFunction                   = library.makeFunction(name: "basic_vertex_main")
         pipelineDescriptor.vertexDescriptor                 = Model.getNewVertexDescriptor()
-        guard let shadowPipeline = Pipeline(desc: pipelineDescriptor, device: device) else
+        guard let shadowPipeline = Pipeline(desc: pipelineDescriptor,
+                                            device: device,
+                                            type: .Shadows) else
         {
             fatalError("Couldn't create shadow pipeline state")
         }
@@ -550,6 +511,69 @@ public class Renderer: NSObject, MTKViewDelegate
             mView.window?.title = "Talos [" + String(StaticWrapper.frameCount) + "fps]"
             StaticWrapper.frameCount = 0
             StaticWrapper.cummulativeTime = 0
+        }
+    }
+
+    /// Renders a model
+    /// - Parameters:
+    ///    - encoder:
+    ///    - object: Renderable to be rendered
+    ///    - passType: This will be used to determine the material to use and the resources to bind
+    private func encodeRenderCommand(encoder: MTLRenderCommandEncoder,
+                                     object: Renderable,
+                                     passType: PassType)
+    {
+        // TODO: Bind only the matrices needed for the pass type
+        let modelMatrix  = object.getModelMatrix()
+        let normalMatrix = object.getNormalMatrix()
+
+        // Set buffers
+        encoder.setVertexBuffer(object.getVertexBuffer(),
+                                offset: 0,
+                                index: VERTEX_BUFFER_INDEX)
+
+        encoder.setVertexBytes(modelMatrix.asPackedArray() +
+                                normalMatrix.asPackedArray(),
+                               length: Matrix4x4.size() * 2,
+                               index: OBJECT_MATRICES_INDEX)
+
+        // The shadow passes don't have a fragment stage and don't need materials
+        if (passType != .Shadows)
+        {
+            encoder.setFragmentBytes(modelMatrix.asPackedArray() +
+                                        normalMatrix.asPackedArray(),
+                                     length: Matrix4x4.size() * 2,
+                                     index: OBJECT_MATRICES_INDEX)
+
+            // TODO: Keep track of the bound PSOs and/or sort the models by material
+            let material = object.getMaterial()
+            encoder.setRenderPipelineState(material.pipeline.state)
+            encoder.setFrontFacing(object.getWinding())
+
+            // Set Textures
+            for texture in material.textures
+            {
+                if let idx = texture.getIndexAtStage(.Vertex)
+                {
+                    encoder.setVertexTexture((texture.getResource() as! MTLTexture),
+                                             index: idx)
+                }
+                if let idx = texture.getIndexAtStage(.Fragment)
+                {
+                    encoder.setFragmentTexture((texture.getResource() as! MTLTexture),
+                                               index: idx)
+                }
+            }
+        }
+
+        // Draw
+        for submesh in object.getMesh().submeshes
+        {
+            encoder.drawIndexedPrimitives(type:                 submesh.primitiveType,
+                                          indexCount:           submesh.indexCount,
+                                          indexType:            submesh.indexType,
+                                          indexBuffer:          submesh.indexBuffer.buffer,
+                                          indexBufferOffset:    submesh.indexBuffer.offset)
         }
     }
 
