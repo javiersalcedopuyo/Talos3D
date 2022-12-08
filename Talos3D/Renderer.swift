@@ -140,8 +140,6 @@ public class Renderer: NSObject, MTKViewDelegate
         self.renderScene()
 
         self.endFrame()
-
-        self.countAndDisplayFPS()
     }
 
     // TODO: Double/Triple buffer
@@ -485,32 +483,6 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             SimpleLogs.ERROR("Couldn't load texture \(name)")
             return nil
-        }
-    }
-
-    private func countAndDisplayFPS()
-    {
-        struct StaticWrapper
-        {
-            static var start = DispatchTime.now().uptimeNanoseconds
-            static var cummulativeTime: UInt64 = 0
-            static var frameCount = 0
-        }
-
-        StaticWrapper.frameCount += 1
-
-        let currentTime = DispatchTime.now().uptimeNanoseconds
-        let deltaTime = currentTime > StaticWrapper.start ? currentTime - StaticWrapper.start : 0
-        StaticWrapper.cummulativeTime += deltaTime
-        StaticWrapper.start = currentTime
-
-        // Refresh after roughly 1 second
-        if (StaticWrapper.cummulativeTime >= 1_000_000_000)
-        {
-            // TODO: Display on UI instead of on the title bar
-            mView.window?.title = "Talos [" + String(StaticWrapper.frameCount) + "fps]"
-            StaticWrapper.frameCount = 0
-            StaticWrapper.cummulativeTime = 0
         }
     }
 
