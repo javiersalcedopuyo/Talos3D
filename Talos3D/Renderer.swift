@@ -39,7 +39,7 @@ public class Renderer: NSObject, MTKViewDelegate
     // MARK: - Public
     public init?(mtkView: MTKView)
     {
-        if mtkView.device == nil
+        guard let device = mtkView.device else
         {
             fatalError("NO GPU!")
         }
@@ -49,7 +49,7 @@ public class Renderer: NSObject, MTKViewDelegate
         mView.clearDepth              = 1.0
         mView.clearColor              = MTLClearColor(red: 0.25, green: 0.25, blue: 0.25, alpha: 1.0)
 
-        guard let cq = mView.device?.makeCommandQueue() else
+        guard let cq = device.makeCommandQueue() else
         {
             fatalError("Could not create command queue")
         }
@@ -59,18 +59,23 @@ public class Renderer: NSObject, MTKViewDelegate
          self.shadowPipeline,
          self.mainPipeline) = Self.createPipelines(view: mView)
 
+        self.shadowMap = Self.createShadowMap(width: 512,
+                                              height: 512,
+                                              format: .depth16Unorm,
+                                              device: device)
+
         self.defaultMaterial = Material(pipeline: self.defaultPipeline)
 
         let depthStencilDesc = MTLDepthStencilDescriptor()
         depthStencilDesc.depthCompareFunction = .less
         depthStencilDesc.isDepthWriteEnabled  = true
 
-        mDepthStencilState = mView.device?.makeDepthStencilState(descriptor: depthStencilDesc)
+        mDepthStencilState = device.makeDepthStencilState(descriptor: depthStencilDesc)
 
         super.init()
 
-        self.createMaterials(device: mtkView.device!)
-        self.buildScene(device: mtkView.device!)
+        self.createMaterials(device: device)
+        self.buildScene(device: device)
         mView.delegate = self
     }
 
@@ -169,28 +174,8 @@ public class Renderer: NSObject, MTKViewDelegate
 
     func renderShadowMap()
     {
-        guard let device = self.mView.device else
-        {
-            fatalError("No device")
-        }
-
-        // TODO: Move this out so it's not done every frame
-        let shadowMapDesc = MTLTextureDescriptor()
-        shadowMapDesc.width = 512
-        shadowMapDesc.height = 512
-        shadowMapDesc.pixelFormat = mView.depthStencilPixelFormat
-        shadowMapDesc.storageMode = .private
-        shadowMapDesc.usage = [.renderTarget, .shaderRead]
-
-        self.shadowMap = device.makeTexture(descriptor: shadowMapDesc)
-        if self.shadowMap == nil
-        {
-            SimpleLogs.ERROR("Couldn't create the depth buffer")
-        }
-        self.shadowMap?.label = "Shadow Map"
-
         let renderPassDesc = MTLRenderPassDescriptor()
-        renderPassDesc.depthAttachment.texture = self.shadowMap!
+        renderPassDesc.depthAttachment.texture = self.shadowMap
         renderPassDesc.depthAttachment.storeAction = .store
 
         // TODO: Adapt this to multiple lights
@@ -275,10 +260,7 @@ public class Renderer: NSObject, MTKViewDelegate
                                       length: Matrix4x4.size(),
                                       index: LIGHT_MATRIX_INDEX)
 
-        if let sm = self.shadowMap
-        {
-            commandEncoder.setFragmentTexture(sm, index: SHADOW_MAP_INDEX)
-        }
+        commandEncoder.setFragmentTexture(self.shadowMap, index: SHADOW_MAP_INDEX)
 
         for model in self.scene.objects
         {
@@ -356,6 +338,39 @@ public class Renderer: NSObject, MTKViewDelegate
         return (defaultPipeline, shadowPipeline, mainPipeline)
     }
 
+    /// Creates a new texture to be used as a shadow map
+    /// - Parameters:
+    ///     - width
+    ///     - height
+    ///     - format: Must be either depth16Unorm or depth32Float
+    ///     - device: The MTLDevice that will create the texture
+    /// - Returns:
+    ///     - shadowMap
+    static private func createShadowMap(width: Int,
+                                        height: Int,
+                                        format: MTLPixelFormat,
+                                        device: MTLDevice)
+    -> MTLTexture
+    {
+        assert(format == .depth16Unorm || format == .depth32Float)
+
+        let descriptor = MTLTextureDescriptor()
+        descriptor.width = width
+        descriptor.height = height
+        descriptor.pixelFormat = format
+        descriptor.storageMode = .private
+        descriptor.usage = [.renderTarget, .shaderRead]
+
+        guard let shadowMap = device.makeTexture(descriptor: descriptor) else
+        {
+            // TODO: Handle this gracefully
+            fatalError("Couldn't create the depth buffer")
+        }
+        shadowMap.label = "Shadow Map"
+
+        return shadowMap
+    }
+
     private func createMaterials(device: MTLDevice)
     {
         let material1 = Material(pipeline: self.mainPipeline)
@@ -385,9 +400,6 @@ public class Renderer: NSObject, MTKViewDelegate
         cam.lookAt(Vector3.zero())
 
         let light = DirectionalLight();
-//        light.rotateAround(worldAxis: .Y, radians: deg2rad(45))
-//        light.rotateAround(localAxis: .X, radians: deg2rad(30))
-//        light.move(to: -light.transform.getForward()) // For the shadow mapping
         light.move(to: Vector3(x: -1, y: 1, z: -1))
         light.lookAt(Vector3.zero())
 
@@ -559,7 +571,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
     private var mDepthStencilState: MTLDepthStencilState?
 
-    private var shadowMap: MTLTexture?
+    private var shadowMap: MTLTexture
     // TODO: dummy texture
 
     private var scene: Scene!
