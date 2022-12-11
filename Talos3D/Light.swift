@@ -11,7 +11,7 @@ protocol LightSource : Positionable
 {
     var color:          Vector4     {get set} // TODO: use uint8s? Vector3? Pack the intensity in the alpha?
     var intensity:      Float       {get set}
-    var castsShadows:   Bool        {get set}
+    var projection:     Matrix4x4?  {get set}
 
     func getBufferData() -> [Float]
     func getBufferSize() -> Int
@@ -24,22 +24,24 @@ class DirectionalLight : LightSource
     var transform: Transform    = Transform.init()
     var color: Vector4          = Vector4.one
     var intensity: Float        = 1.0
-    var castsShadows: Bool      = true
-
-    public init()
-    {
-        self.transform = Transform.init()
-        self.color = Vector4.one
-        self.intensity = 1.0
-    }
+    var projection: Matrix4x4?  = nil
 
     public init(direction: Vector3,
                 color: Vector4,
-                intensity: Float)
+                intensity: Float,
+                castsShadows: Bool)
     {
-        self.transform = Transform.init()
         self.color = color
         self.intensity = intensity
+
+        if castsShadows
+        {
+            // TODO: Make this configurable
+            self.projection = Matrix4x4.orthographicLH(width: 2,
+                                                       height: 2,
+                                                       near: 0.1,
+                                                       far: 100) // TODO: Use the range instead
+        }
 
         self.lookAt(direction)
     }
@@ -110,6 +112,7 @@ class DirectionalLight : LightSource
     private func updateView()
     {
         let t = self.transform
+        t.move(to: -t.getForward()) // TODO: Scale this with the range
         self.view = Matrix4x4.lookAtLH(eye:    t.position,
                                        target: t.position + t.getForward(),
                                        upAxis: Vector3(x: 0, y: 1, z: 0))

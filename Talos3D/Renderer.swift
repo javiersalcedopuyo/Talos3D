@@ -180,10 +180,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
         // TODO: Adapt this to multiple lights
         let view = self.scene.lights[0].getView()
-        let proj = Matrix4x4.orthographicLH(width: 2,
-                                            height: 2,
-                                            near: 0.1,
-                                            far: scene.mainCamera.getFar())
+        let proj = self.scene.lights[0].projection ?? .identity()
 
         guard let commandEncoder = self.currentCommandBuffer?
                                        .makeRenderCommandEncoder(descriptor: renderPassDesc) else
@@ -251,12 +248,7 @@ public class Renderer: NSObject, MTKViewDelegate
                                         length: dirLight.getBufferSize(),
                                         index: LIGHTS_BUFFER_INDEX)
 
-        let lightProj = Matrix4x4.orthographicLH(width: 2,
-                                                 height: 2,
-                                                 near: 0.1,
-                                                 far: scene.mainCamera.getFar())
-
-        let lightMatrix = lightProj * dirLight.getView() // Inverse View?
+        let lightMatrix = (dirLight.projection ?? .identity()) * dirLight.getView() // Inverse View?
         commandEncoder.setVertexBytes(lightMatrix.asPackedArray(),
                                       length: Matrix4x4.size(),
                                       index: LIGHT_MATRIX_INDEX)
@@ -400,9 +392,10 @@ public class Renderer: NSObject, MTKViewDelegate
         cam.move(to: Vector3(x:0, y:0.25, z:-0.6))
         cam.lookAt(Vector3.zero())
 
-        let light = DirectionalLight();
-        light.move(to: Vector3(x: -1, y: 1, z: -1))
-        light.lookAt(Vector3.zero())
+        let light = DirectionalLight(direction: Vector3(x:1, y:-1, z:1),
+                                     color: .one,
+                                     intensity: 1,
+                                     castsShadows: true);
 
         let sceneBuilder = SceneBuilder()
                             .add(camera: cam)
