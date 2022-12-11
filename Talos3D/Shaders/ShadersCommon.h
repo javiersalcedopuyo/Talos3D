@@ -36,6 +36,7 @@ typedef NS_ENUM(NSInteger, BufferIndices)
     SCENE_MATRICES,
     OBJECT_MATRICES,
     LIGHTS,
+    LIGHT_MATRIX,
 
     BUFFER_COUNT
 };
@@ -43,6 +44,7 @@ typedef NS_ENUM(NSInteger, BufferIndices)
 typedef NS_ENUM(NSInteger, TextureIndices)
 {
     ALBEDO = 0,
+    SHADOW_MAP,
 
     TEXTURE_COUNT
 };
