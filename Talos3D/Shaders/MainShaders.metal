@@ -82,8 +82,8 @@ float ComputeShadow(float4 position, texture2d<float> shadowMap)
     auto closestDepth = shadowMap.sample(smp, lightCoords.xy).x;
     auto currentDepth = lightCoords.z;
 
-    auto bias = 0.0001f;
-    return currentDepth > closestDepth + bias ? 1.f : 0.f;
+    // NOTE: The bias is already applied in the shadow pass
+    return currentDepth > closestDepth ? 1.f : 0.f;
 }
 
 fragment

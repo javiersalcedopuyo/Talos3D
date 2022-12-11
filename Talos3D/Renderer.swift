@@ -194,6 +194,7 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder.label = "Shadow pass"
         commandEncoder.setDepthStencilState(mDepthStencilState)
         commandEncoder.setCullMode(.none)
+        commandEncoder.setDepthBias(1, slopeScale: 3, clamp: 1/128)
 
         // Set Scene buffers
         commandEncoder.setVertexBytes(view.asPackedArray() + proj.asPackedArray(),
