@@ -178,10 +178,6 @@ public class Renderer: NSObject, MTKViewDelegate
         renderPassDesc.depthAttachment.texture = self.shadowMap
         renderPassDesc.depthAttachment.storeAction = .store
 
-        // TODO: Adapt this to multiple lights
-        let view = self.scene.lights[0].getView()
-        let proj = self.scene.lights[0].projection ?? .identity()
-
         guard let commandEncoder = self.currentCommandBuffer?
                                        .makeRenderCommandEncoder(descriptor: renderPassDesc) else
         {
@@ -194,8 +190,11 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder.setDepthBias(1, slopeScale: 3, clamp: 1/128)
 
         // Set Scene buffers
-        commandEncoder.setVertexBytes(view.asPackedArray() + proj.asPackedArray(),
-                                      length: Matrix4x4.size() * 2,
+        // TODO: Adapt this to multiple lights
+        let view = self.scene.lights[0].getView()
+        let proj = self.scene.lights[0].projection ?? .identity()
+        commandEncoder.setVertexBytes((proj * view).asPackedArray(),
+                                      length: Matrix4x4.size(),
                                       index: SCENE_MATRICES_INDEX)
 
         // All objects in the shadow pass use the same PSO
@@ -319,7 +318,7 @@ public class Renderer: NSObject, MTKViewDelegate
         // We don't need a color attachment or a fragment function because we just want the depth
         pipelineDescriptor.colorAttachments[0].pixelFormat  = .invalid
         pipelineDescriptor.fragmentFunction                 = nil
-        pipelineDescriptor.vertexFunction                   = library.makeFunction(name: "basic_vertex_main")
+        pipelineDescriptor.vertexFunction                   = library.makeFunction(name: "shadow_vertex_main")
         pipelineDescriptor.vertexDescriptor                 = Model.getNewVertexDescriptor()
         guard let shadowPipeline = Pipeline(desc: pipelineDescriptor,
                                             device: device,
@@ -501,26 +500,21 @@ public class Renderer: NSObject, MTKViewDelegate
                                      object: Renderable,
                                      passType: PassType)
     {
-        // TODO: Bind only the matrices needed for the pass type
-        let modelMatrix  = object.getModelMatrix()
-        let normalMatrix = object.getNormalMatrix()
+        var objMatrixData = object.getModelMatrix().asPackedArray()
 
         // Set buffers
         encoder.setVertexBuffer(object.getVertexBuffer(),
                                 offset: 0,
                                 index: VERTEX_BUFFER_INDEX)
 
-        encoder.setVertexBytes(modelMatrix.asPackedArray() +
-                                normalMatrix.asPackedArray(),
-                               length: Matrix4x4.size() * 2,
-                               index: OBJECT_MATRICES_INDEX)
-
-        // The shadow passes don't have a fragment stage and don't need materials
-        if (passType != .Shadows)
+        // Bind fragment resources
+        switch passType
         {
-            encoder.setFragmentBytes(modelMatrix.asPackedArray() +
-                                        normalMatrix.asPackedArray(),
-                                     length: Matrix4x4.size() * 2,
+        case .ForwardLighting:
+            objMatrixData.append(contentsOf: object.getNormalMatrix().asPackedArray() )
+
+            encoder.setFragmentBytes(objMatrixData,
+                                     length: MemoryLayout<Float>.size * objMatrixData.count,
                                      index: OBJECT_MATRICES_INDEX)
 
             // TODO: Keep track of the bound PSOs and/or sort the models by material
@@ -542,7 +536,17 @@ public class Renderer: NSObject, MTKViewDelegate
                                                index: idx)
                 }
             }
+
+        case .Shadows:
+            break // The shadow passes don't have a fragment stage and don't need materials
+
+        case .GBuffer, .DeferredLighting:
+            UNIMPLEMENTED("Deferred rendering is not supported yet.") // TODO: Deferred Rendering
         }
+
+        encoder.setVertexBytes(objMatrixData,
+                               length: MemoryLayout<Float>.size * objMatrixData.count,
+                               index: OBJECT_MATRICES_INDEX)
 
         // Draw
         for submesh in object.getMesh().submeshes

@@ -40,13 +40,9 @@ struct VertexOut
     float2 texcoord;
 };
 
-vertex
-float4 basic_vertex_main(VertexIn vert [[ stage_in ]],
-                         constant SceneMatrices&   scene       [[ buffer(SCENE_MATRICES) ]],
-                         constant ObjectMatrices&  obj         [[ buffer(OBJECT_MATRICES) ]])
-{
-    return scene.proj * scene.view * obj.model * float4(vert.position, 1.0f);
-}
+
+
+
 
 vertex
 VertexOut vertex_main(VertexIn                  vert            [[ stage_in ]],
@@ -62,6 +58,10 @@ VertexOut vertex_main(VertexIn                  vert            [[ stage_in ]],
     out.texcoord = vert.texcoord;
     return out;
 }
+
+
+
+
 
 float ComputeShadow(float4 position, texture2d<float> shadowMap)
 {
@@ -85,6 +85,10 @@ float ComputeShadow(float4 position, texture2d<float> shadowMap)
     // NOTE: The bias is already applied in the shadow pass
     return currentDepth > closestDepth ? 1.f : 0.f;
 }
+
+
+
+
 
 fragment
 float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
