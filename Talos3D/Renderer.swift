@@ -186,7 +186,6 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         commandEncoder.label = "Shadow pass"
         commandEncoder.setDepthStencilState(mDepthStencilState)
-        commandEncoder.setCullMode(.none)
         commandEncoder.setDepthBias(1, slopeScale: 3, clamp: 1/128)
 
         // Set Scene buffers
@@ -231,7 +230,6 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder.label = "Main pass"
 
         commandEncoder.setDepthStencilState(mDepthStencilState)
-        commandEncoder.setCullMode(.none) // TODO: Determine this in a per-model basis
 
         // Set Scene buffers
         commandEncoder.setVertexBytes(view.asPackedArray() + proj.asPackedArray(),
@@ -405,6 +403,10 @@ public class Renderer: NSObject, MTKViewDelegate
         self.scene = sceneBuilder.build(device: device)
     }
 
+    /// Loads models from file into the scene using a scene builder
+    /// - Parameters:
+    ///     - device
+    ///     - sceneBuilder: Passed by reference, the new models will be added to it
     // TODO: Read model and transform data from file
     private func loadModelsIntoScene(device: MTLDevice, sceneBuilder: SceneBuilder)
     {
@@ -434,7 +436,8 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             let model = Model(device: device,
                               url: modelURL,
-                              material: self.materials[TEST_MATERIAL_NAME_2] ?? self.defaultMaterial)
+                              material: self.materials[TEST_MATERIAL_NAME_2] ?? self.defaultMaterial,
+                              culling: .none)
 
             model.scale(by: 0.01)
             model.move(to: Vector3(x:0.15, y:0.075, z:0))
@@ -452,7 +455,8 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             let model = Model(device: device,
                               url: modelURL,
-                              material: self.materials[TEST_MATERIAL_NAME_1] ?? self.defaultMaterial)
+                              material: self.materials[TEST_MATERIAL_NAME_1] ?? self.defaultMaterial,
+                              culling: .none)
 
             sceneBuilder.add(object: model)
         }
@@ -501,6 +505,8 @@ public class Renderer: NSObject, MTKViewDelegate
                                      passType: PassType)
     {
         var objMatrixData = object.getModelMatrix().asPackedArray()
+
+        encoder.setCullMode(object.faceCulling)
 
         // Set buffers
         encoder.setVertexBuffer(object.getVertexBuffer(),

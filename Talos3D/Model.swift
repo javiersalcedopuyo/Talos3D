@@ -17,8 +17,20 @@ let TEXCOORD = VertexAttributeIndices.TEXCOORD.rawValue
 // TODO: Agregation of Renderables?
 public class Model : Renderable
 {
+    // MARK: - Public Members
+    public var faceCulling: MTLCullMode
+
     // MARK: - Public Methods
-    init(device: MTLDevice, url: URL, material mat: Material)
+    /// Constructor
+    /// - Parameters:
+    ///     - device: Needed to load the meshes
+    ///     - url: The URL of the model file
+    ///     - material
+    ///     - culling: Face culling mode. Assumes most models will be closed so it's BACK by default
+    init(device: MTLDevice,
+         url: URL,
+         material mat: Material,
+         culling: MTLCullMode = .back)
     {
         self.material = mat
 
@@ -33,6 +45,7 @@ public class Model : Renderable
                                   vertexDescriptor: vertexDesc ?? Self.getNewVertexDescriptor())
         mWinding   = .clockwise
         mTransform = Transform()
+        self.faceCulling = culling
 
         self.getVertexBuffer().label = "Vertex Buffer"
     }

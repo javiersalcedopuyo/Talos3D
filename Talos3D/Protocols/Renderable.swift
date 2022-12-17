@@ -11,6 +11,8 @@ import SLA
 
 protocol Renderable : Positionable
 {
+    var faceCulling: MTLCullMode {get set} // TODO: Make it dependent on the type of pass?
+
     func getScale() -> Vector3
     func setScale(_ newScale: Vector3)
     func scale(by factor: Float)
