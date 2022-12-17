@@ -106,7 +106,9 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
     frag.normal = normalize(frag.normal);
     auto lightDirTransformed = normalize(scene.view * float4(-light.direction, 0)).xyz;
 
-    auto albedo = tex.sample(smp, frag.texcoord.xy);
+    auto albedo = is_null_texture(tex)
+                    ? float4(1)
+                    : tex.sample(smp, frag.texcoord.xy);
 
     auto lambertian = saturate(dot(frag.normal, lightDirTransformed.xyz));
 
@@ -116,7 +118,10 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
 
     // TODO: Specular
 
-    auto shadow = ComputeShadow(frag.positionInLightSpace, shadowMap);
+    auto shadow = is_null_texture(shadowMap)
+                    ? 0.f
+                    : ComputeShadow(frag.positionInLightSpace, shadowMap);
+
     auto o = float4(0);
     o.rgb += albedo.rgb * (diffuse.rgb * (1.f - shadow) + ambient);
 
