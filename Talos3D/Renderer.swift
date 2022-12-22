@@ -219,6 +219,7 @@ public class Renderer: NSObject, MTKViewDelegate
             SimpleLogs.ERROR("No render pass descriptor. Skipping pass.")
             return
         }
+        renderPassDesc.depthAttachment.storeAction = .dontCare
 
         guard let commandEncoder = self.currentCommandBuffer?
                                        .makeRenderCommandEncoder(descriptor: renderPassDesc) else
