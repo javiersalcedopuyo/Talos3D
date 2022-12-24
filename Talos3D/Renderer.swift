@@ -197,7 +197,12 @@ public class Renderer: NSObject, MTKViewDelegate
                                       index: SCENE_MATRICES_INDEX)
 
         // All objects in the shadow pass use the same PSO
-        commandEncoder.setRenderPipelineState(self.shadowPipeline.state)
+        let psoID = ObjectIdentifier(self.shadowPipeline)
+        if  psoID != self.currentlyBoundPipelineID
+        {
+            commandEncoder.setRenderPipelineState(self.shadowPipeline.state)
+            self.currentlyBoundPipelineID = psoID
+        }
 
         for model in self.scene.objects
         {
@@ -524,9 +529,14 @@ public class Renderer: NSObject, MTKViewDelegate
                                      length: MemoryLayout<Float>.size * objMatrixData.count,
                                      index: OBJECT_MATRICES_INDEX)
 
-            // TODO: Keep track of the bound PSOs and/or sort the models by material
+            // TODO: Sort the models by material
             let material = object.getMaterial()
-            encoder.setRenderPipelineState(material.pipeline.state)
+            let psoID = ObjectIdentifier(material.pipeline)
+            if psoID != self.currentlyBoundPipelineID
+            {
+                encoder.setRenderPipelineState(material.pipeline.state)
+                self.currentlyBoundPipelineID = psoID
+            }
             encoder.setFrontFacing(object.getWinding())
 
             // Set Textures
@@ -573,6 +583,7 @@ public class Renderer: NSObject, MTKViewDelegate
     private let mainPipeline: Pipeline
     private let defaultPipeline: Pipeline
     private let shadowPipeline: Pipeline
+    private var currentlyBoundPipelineID: ObjectIdentifier? = nil
 
     private var mDepthStencilState: MTLDepthStencilState?
 
