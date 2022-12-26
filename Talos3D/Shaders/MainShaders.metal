@@ -107,7 +107,7 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
     auto lightDirTransformed = normalize(scene.view * float4(-light.direction, 0)).xyz;
 
     auto albedo = is_null_texture(tex)
-                    ? float4(1)
+                    ? float4(1,0,1,1)
                     : tex.sample(smp, frag.texcoord.xy);
 
     auto lambertian = saturate(dot(frag.normal, lightDirTransformed.xyz));
