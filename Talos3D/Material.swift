@@ -31,6 +31,7 @@ public class Material : NSCopying
     func getVertexShader()   -> MTLFunction? { pipeline.descriptor.vertexFunction }
     func getFragmentShader() -> MTLFunction? { pipeline.descriptor.fragmentFunction }
 
+    // TODO: Rethink this
     func swapTexture(idx: Int, newTexture: Texture)
     {
         if idx >= self.textures.count

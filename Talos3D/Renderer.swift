@@ -32,6 +32,7 @@ let TEST_TEXTURE_NAME_2     = "TestTexture2"
 
 let TEST_MATERIAL_NAME_1    = "Mat1"
 let TEST_MATERIAL_NAME_2    = "Mat2"
+let WHITE_MATERIAL_NAME     = "White Material"
 let WRONG_MATERIAL_NAME     = "LoremIpsum"
 
 public class Renderer: NSObject, MTKViewDelegate
@@ -72,11 +73,54 @@ public class Renderer: NSObject, MTKViewDelegate
 
         mDepthStencilState = device.makeDepthStencilState(descriptor: depthStencilDesc)
 
+        guard let dummy = Self.createMetalTexture(size: MTLSize(width: 1, height: 1, depth: 1),
+                                                  initialValue: 255,
+                                                  device: device)
+        else
+        {
+            fatalError("Failed to create the dummy texture.")
+        }
+        self.dummyTexture = dummy
+
         super.init()
 
         self.createMaterials(device: device)
         self.buildScene(device: device)
         mView.delegate = self
+    }
+
+    /// Creates a new Metal Texture with a given size and initial value
+    /// - Parameters:
+    ///     - size
+    ///     - initialValue: [0,255] Will be set for all channels of all texels
+    ///     - device: The device used to create the texture
+    /// - Returns:
+    ///     - MTLTexture: With RGBA8Unorm pixel format
+    private static func createMetalTexture(size:            MTLSize,
+                                           initialValue:    UInt8,
+                                           device:          MTLDevice)
+    -> MTLTexture?
+    {
+        let texDesc = MTLTextureDescriptor()
+        texDesc.width  = size.width
+        texDesc.height = size.height
+        texDesc.depth  = size.depth
+
+        guard let mtlTex = device.makeTexture(descriptor: texDesc) else
+        {
+            ERROR("Failed to create texture.")
+            return nil
+        }
+
+        let dataSize = 4 * size.width * size.height * size.depth
+        let data = Array(repeating: initialValue, count: dataSize)
+
+        mtlTex.replace(region:      MTLRegion(origin: MTLOrigin(x: 0, y: 0, z: 0), size: size),
+                       mipmapLevel: 0,
+                       withBytes:   data,
+                       bytesPerRow: dataSize)
+
+        return mtlTex
     }
 
     public func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize)
@@ -382,11 +426,19 @@ public class Renderer: NSObject, MTKViewDelegate
                                       index: ALBEDO_MAP_INDEX,
                                       device: device)
         {
-            material2.textures.append(tex)
+            material2.swapTexture(idx: 0, newTexture: tex)
         }
+
+        var whiteTex = Texture(mtlTexture: self.dummyTexture,
+                               label: "Dummy")
+        whiteTex.setIndex(0, stage: .Fragment)
+
+        let material3 = material1.copy() as! Material
+        material3.swapTexture(idx: 0, newTexture: whiteTex)
 
         self.materials[TEST_MATERIAL_NAME_1] = material1
         self.materials[TEST_MATERIAL_NAME_2] = material2
+        self.materials[WHITE_MATERIAL_NAME]  = material3
     }
 
     private func buildScene(device: MTLDevice)
@@ -422,7 +474,7 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             let model = Model(device: device,
                               url: modelURL,
-                              material: self.materials[TEST_MATERIAL_NAME_2] ?? self.defaultMaterial)
+                              material: self.materials[WHITE_MATERIAL_NAME] ?? self.defaultMaterial)
 
             let rotDegrees = SLA.rad2deg(0.5 * TAU)
             model.rotate(localEulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
@@ -588,7 +640,7 @@ public class Renderer: NSObject, MTKViewDelegate
     private var mDepthStencilState: MTLDepthStencilState?
 
     private var shadowMap: MTLTexture
-    // TODO: dummy texture
+    private let dummyTexture: MTLTexture
 
     private var scene: Scene!
 
