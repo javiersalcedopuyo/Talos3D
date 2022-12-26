@@ -14,6 +14,12 @@ enum Stage
     case Compute
 }
 
+struct BindingPoint: Hashable
+{
+    let index: Int
+    let stage: Stage
+}
+
 protocol ShaderResource
 {
     func getResource() -> MTLResource

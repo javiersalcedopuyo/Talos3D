@@ -232,6 +232,8 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder.setDepthStencilState(mDepthStencilState)
         commandEncoder.setDepthBias(1, slopeScale: 3, clamp: 1/128)
 
+        self.boundResources.removeAll()
+
         // Set Scene buffers
         // TODO: Adapt this to multiple lights
         let view = self.scene.lights[0].getView()
@@ -276,8 +278,9 @@ public class Renderer: NSObject, MTKViewDelegate
             SimpleLogs.ERROR("Couldn't creater a command encoder. Skipping pass.")
             return
         }
-
         commandEncoder.label = "Main pass"
+
+        self.boundResources.removeAll()
 
         commandEncoder.setDepthStencilState(mDepthStencilState)
 
@@ -300,7 +303,9 @@ public class Renderer: NSObject, MTKViewDelegate
                                       length: Matrix4x4.size(),
                                       index: LIGHT_MATRIX_INDEX)
 
-        commandEncoder.setFragmentTexture(self.shadowMap, index: SHADOW_MAP_INDEX)
+        self.bind(texture: self.shadowMap,
+                  at: BindingPoint(index: SHADOW_MAP_INDEX, stage: .Fragment),
+                  inEncoder: commandEncoder)
 
         for model in self.scene.objects
         {
@@ -567,9 +572,10 @@ public class Renderer: NSObject, MTKViewDelegate
         encoder.setCullMode(object.faceCulling)
 
         // Set buffers
-        encoder.setVertexBuffer(object.getVertexBuffer(),
-                                offset: 0,
-                                index: VERTEX_BUFFER_INDEX)
+        self.bind(buffer:       object.getVertexBuffer(),
+                  at:           BindingPoint(index: VERTEX_BUFFER_INDEX, stage: .Vertex),
+                  withOffset:   0,
+                  inEncoder:    encoder)
 
         // Bind fragment resources
         switch passType
@@ -596,13 +602,15 @@ public class Renderer: NSObject, MTKViewDelegate
             {
                 if let idx = texture.getIndexAtStage(.Vertex)
                 {
-                    encoder.setVertexTexture((texture.getResource() as! MTLTexture),
-                                             index: idx)
+                    self.bind(texture: texture.getResource() as! MTLTexture,
+                              at: BindingPoint(index: idx, stage: .Vertex),
+                              inEncoder: encoder)
                 }
                 if let idx = texture.getIndexAtStage(.Fragment)
                 {
-                    encoder.setFragmentTexture((texture.getResource() as! MTLTexture),
-                                               index: idx)
+                    self.bind(texture: texture.getResource() as! MTLTexture,
+                              at: BindingPoint(index: idx, stage: .Fragment),
+                              inEncoder: encoder)
                 }
             }
 
@@ -628,6 +636,70 @@ public class Renderer: NSObject, MTKViewDelegate
         }
     }
 
+    /// Binds a buffer in a render command encoder
+    /// - Parameters:
+    ///     - buffer
+    ///     - bindingPoint: Index and stage
+    ///     - offset
+    ///     - encoder
+    // TODO: Use a closure to use this for any resource and any encoder?
+    private func bind(buffer:                   MTLBuffer,
+                      at            bindPoint:  BindingPoint,
+                      withOffset    offset:     Int,
+                      inEncoder     encoder:    MTLRenderCommandEncoder)
+    {
+        let id = ObjectIdentifier(buffer)
+
+        if self.boundResources[bindPoint] == id
+        {
+            return
+        }
+
+        switch bindPoint.stage
+        {
+        case .Vertex:
+            encoder.setVertexBuffer(buffer, offset: offset, index: bindPoint.index)
+        case .Fragment:
+            encoder.setFragmentBuffer(buffer, offset: offset, index: bindPoint.index)
+        default:
+            ERROR("Invalid stage. Only for render command encoders.")
+            return
+        }
+
+        self.boundResources[bindPoint] = id
+    }
+
+    /// Binds a texture in a render command encoder
+    /// - Parameters:
+    ///     - texture
+    ///     - bindingPoint: Index and stage
+    ///     - encoder
+    // TODO: Use a closure to use this for any resource and any encoder?
+    private func bind(texture:              MTLTexture,
+                      at        bindPoint:  BindingPoint,
+                      inEncoder encoder:    MTLRenderCommandEncoder)
+    {
+        let id = ObjectIdentifier(texture)
+
+        if self.boundResources[bindPoint] == id
+        {
+            return
+        }
+
+        switch bindPoint.stage
+        {
+        case .Vertex:
+            encoder.setVertexTexture(texture, index: bindPoint.index)
+        case .Fragment:
+            encoder.setFragmentTexture(texture, index: bindPoint.index)
+        default:
+            ERROR("Invalid stage. Only for render command encoders.")
+            return
+        }
+
+        self.boundResources[bindPoint] = id
+    }
+
     private let commandQueue:  MTLCommandQueue
     private var currentCommandBuffer: MTLCommandBuffer?
 
@@ -646,4 +718,6 @@ public class Renderer: NSObject, MTKViewDelegate
 
     private let defaultMaterial: Material
     private var materials: [String: Material] = [:]
+
+    private var boundResources: [BindingPoint: ObjectIdentifier] = [:]
 }
