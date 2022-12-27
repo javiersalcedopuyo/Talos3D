@@ -6,75 +6,38 @@
 //
 
 import Metal
-import SLA
-import SimpleLogs
 
-class SceneBuilder
+class Scene
 {
     // MARK: - Public
+    // TODO: init?(fromFile: String)
     @discardableResult
-    func add(camera: Camera) -> SceneBuilder
+    func add(camera: Camera) -> Self
     {
         self.cameras.append(camera)
         return self
     }
 
     @discardableResult
-    func add(light: LightSource) -> SceneBuilder
+    func add(light: LightSource) -> Self
     {
         self.lights.append(light)
         return self
     }
 
     @discardableResult
-    func add(object: Renderable) -> SceneBuilder
+    func add(object: Renderable) -> Self
     {
         self.objects.append(object)
         return self
     }
 
-    func build(device: MTLDevice) -> Scene
-    {
-        let result = Scene(cameras: self.cameras,
-                           lights:  self.lights,
-                           objects: self.objects)
-        reset()
-        return result
-    }
-
-    // MARK: - Private
-    private func reset()
-    {
-        cameras = []
-        lights  = []
-        objects = []
-    }
-
-    private var cameras:    [Camera]        = []
-    private var lights:     [LightSource]   = []
-    private var objects:    [Renderable]    = []
-}
-
-class Scene
-{
-    // MARK: - Public
-    // TODO: init?(fromFile: String)
     var mainCamera: Camera { self.cameras[0] }
 
-    private(set) var cameras: [Camera]
-    private(set) var lights:  [LightSource]
-    private(set) var objects: [Renderable]
-
     // MARK: - Private
-    fileprivate init(cameras: [Camera],
-                     lights: [LightSource],
-                     objects: [Renderable])
-    {
-        self.cameras = cameras
-        self.lights  = lights
-        self.objects = objects
-    }
-
+    private(set) var cameras: [Camera]      = []
+    private(set) var lights:  [LightSource] = []
+    private(set) var objects: [Renderable]  = []
     // TODO: private func makeBuffers(device: MTLDevice)
     // TODO: private var buffers: [String: MTLBuffer]
 }

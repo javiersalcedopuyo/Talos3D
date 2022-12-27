@@ -457,21 +457,18 @@ public class Renderer: NSObject, MTKViewDelegate
                                      intensity: 1,
                                      castsShadows: true);
 
-        let sceneBuilder = SceneBuilder()
-                            .add(camera: cam)
+        self.scene = Scene().add(camera: cam)
                             .add(light: light)
 
-        self.loadModelsIntoScene(device: device, sceneBuilder: sceneBuilder)
-
-        self.scene = sceneBuilder.build(device: device)
+        self.loadModels(intoScene: self.scene, withDevice: device)
     }
 
     /// Loads models from file into the scene using a scene builder
     /// - Parameters:
+    ///     - scene: Passed by reference, the new models will be added to it
     ///     - device
-    ///     - sceneBuilder: Passed by reference, the new models will be added to it
     // TODO: Read model and transform data from file
-    private func loadModelsIntoScene(device: MTLDevice, sceneBuilder: SceneBuilder)
+    private func loadModels(intoScene scene: Scene, withDevice device: MTLDevice)
     {
         // BUNNY
         if let modelURL = Bundle.main.url(forResource: BUNNY_MODEL_NAME,
@@ -486,7 +483,7 @@ public class Renderer: NSObject, MTKViewDelegate
             model.move(to: Vector3(x:-0.15, y:0, z:0))
             // model.flipHandedness()
 
-            sceneBuilder.add(object: model)
+            scene.add(object: model)
         }
         else
         {
@@ -505,7 +502,7 @@ public class Renderer: NSObject, MTKViewDelegate
             model.scale(by: 0.01)
             model.move(to: Vector3(x:0.15, y:0.075, z:0))
 
-            sceneBuilder.add(object: model)
+            scene.add(object: model)
         }
         else
         {
@@ -521,7 +518,7 @@ public class Renderer: NSObject, MTKViewDelegate
                               material: self.materials[TEST_MATERIAL_NAME_1] ?? self.defaultMaterial,
                               culling: .none)
 
-            sceneBuilder.add(object: model)
+            scene.add(object: model)
         }
         else
         {

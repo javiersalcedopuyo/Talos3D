@@ -1,8 +1,9 @@
 # Scene
 
-⚠️ For now, scenes are static and can only be created through a builder.
+⚠️ For now, scenes are static
 
 ## TODO
+- [ ] Skybox
 - [ ] Dynamic scenes
 - [ ] Read from file
 - [ ] Save to file
@@ -11,15 +12,12 @@
 ```mermaid
 classDiagram
 
-class SceneBuilder{
+class Scene{
+    + mainCamera
     + add(light: LightSource)
     + add(camera: Camera)
     + add(object: Renderable)
-    + build(device: MTLDevice) -> Scene
 }
-SceneBuilder --> Scene : Creates
-
-Scene: + mainCamera
 
 class Camera{
     - fovy:        Float
