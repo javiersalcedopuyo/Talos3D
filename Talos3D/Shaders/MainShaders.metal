@@ -79,11 +79,27 @@ float ComputeShadow(float4 position, texture2d<float> shadowMap)
     lightCoords.y = -lightCoords.y;
     lightCoords.xy = (lightCoords.xy + 1.f) * 0.5f;
 
-    auto closestDepth = shadowMap.sample(smp, lightCoords.xy).x;
     auto currentDepth = lightCoords.z;
 
-    // NOTE: The bias is already applied in the shadow pass
-    return currentDepth > closestDepth ? 1.f : 0.f;
+    // Percentage-Closer Filtering (PCF)
+    auto texelSize = 1.f / float2(shadowMap.get_width(), shadowMap.get_height());
+    auto shadow = 0.f;
+
+    auto sampleRadius = 2; // TODO: Make this configurable
+
+    for (int u = -sampleRadius; u <= sampleRadius; ++u)
+    {
+        for (int v = -sampleRadius; v <= sampleRadius; ++v)
+        {
+            auto offset = float2(u,v) * texelSize;
+            auto closestDepth = shadowMap.sample(smp, lightCoords.xy + offset).x;
+
+            // NOTE: The bias is already applied in the shadow pass
+            shadow += currentDepth >= closestDepth ? 1.f : 0.f;
+        }
+    }
+
+    return shadow / pow(2 * sampleRadius + 1, 2.f);
 }
 
 
