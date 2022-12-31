@@ -74,7 +74,7 @@ public class Renderer: NSObject, MTKViewDelegate
         mDepthStencilState = device.makeDepthStencilState(descriptor: depthStencilDesc)
 
         guard let dummy = Self.createMetalTexture(size: MTLSize(width: 1, height: 1, depth: 1),
-                                                  initialValue: 255,
+                                                  initialValue: 128,
                                                   device: device)
         else
         {

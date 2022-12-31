@@ -36,10 +36,13 @@ struct VertexOut
 {
     float4 position [[ position ]];
     float4 positionInLightSpace;
+    float4 positionInViewSpace;
     float3 color;
     float3 normal;
     float2 texcoord;
 };
+
+constant constexpr float glossy = 64.f; // TODO: Make this a material attribute
 
 // MARK: - Helper functions
 /// Percentage-Closer Filtering (PCF) shadow mapping
@@ -121,7 +124,9 @@ VertexOut vertex_main(VertexIn                  vert            [[ stage_in ]],
                       constant float4x4&        lightViewProj   [[ buffer(LIGHT_MATRIX) ]])
 {
     VertexOut out;
-    out.position = scene.proj * scene.view * obj.model * float4(vert.position, 1.0f);
+    out.positionInViewSpace = scene.view * obj.model * float4(vert.position, 1.0f);
+    out.positionInViewSpace /= out.positionInViewSpace.w;
+    out.position = scene.proj * out.positionInViewSpace;
     out.positionInLightSpace = lightViewProj * obj.model * float4(vert.position, 1.0f);
     out.color    = vert.color;
     out.normal   = (scene.view * obj.normal * float4(vert.normal, 0)).xyz;
@@ -155,7 +160,11 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
 
     auto ambient = float3(0.2f);
 
-    // TODO: Specular
+    auto viewDirection = normalize(-frag.positionInViewSpace).xyz;
+    auto halfVector = normalize(lightDirTransformed + viewDirection);
+    auto specularAngle = max(dot(halfVector, frag.normal), 0.f);
+
+    auto specular = light.color * pow(specularAngle, glossy);
 
     auto shadow = is_null_texture(shadowMap)
                     ? 0.f
@@ -163,6 +172,7 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
 
     auto o = float4(0);
     o.rgb += albedo.rgb * (diffuse.rgb * (1.f - shadow) + ambient);
+    o.rgb += specular.rgb * (1.f - shadow);
 
     // Debug normals
 //    o.xyz = (frag.normal + 1.f) * 0.5f;
