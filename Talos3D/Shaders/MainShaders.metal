@@ -170,28 +170,25 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
     frag.normal = normalize(frag.normal);
     auto lightDirTransformed = normalize(scene.view * float4(-light.direction, 0)).xyz;
 
+    // TODO: Add tint as a material property
     auto albedo = is_null_texture(tex)
                     ? float4(1,0,1,1)
                     : tex.sample(smp, frag.texcoord.xy);
 
     auto lambertian = saturate(dot(frag.normal, lightDirTransformed.xyz));
 
-    auto diffuse = light.color * light.intensity * lambertian;
+    auto ambient  = float4(0.2f) * albedo; // TODO: Make the ambient coefficient a Scene property
+    auto diffuse  = lambertian * albedo;
+    auto specular = ComputeBlinnSpecular(normalize(-frag.positionInViewSpace).xyz,  // viewDirection
+                                         lightDirTransformed,                       // lightDirection
+                                         frag.normal,                               // normal
+                                         glossy);                                   // glossyCoefficient
 
-    auto ambient = float3(0.2f);
-
-    auto specular = light.color * ComputeBlinnSpecular(normalize(-frag.positionInViewSpace).xyz,
-                                                       lightDirTransformed,
-                                                       frag.normal,
-                                                       glossy);
     auto shadow = is_null_texture(shadowMap)
                     ? 0.f
                     : ComputeShadow(frag.positionInLightSpace, shadowMap);
 
-    auto o = float4(0);
-    o.rgb += albedo.rgb * (diffuse.rgb * (1.f - shadow) + ambient);
-    o.rgb += specular.rgb * (1.f - shadow);
-
+    auto o = light.color * light.intensity * (diffuse + specular) * (1 - shadow) + ambient;
     // Debug normals
 //    o.xyz = (frag.normal + 1.f) * 0.5f;
 
