@@ -43,7 +43,7 @@ struct VertexOut
     float2 texcoord;
 };
 
-constant constexpr float glossy = 64.f; // TODO: Make this a material attribute
+constant constexpr float roughness = 0.1f; // TODO: Make this a material attribute
 
 // MARK: - Main functions
 vertex
@@ -76,22 +76,27 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
                           s_address::mirrored_repeat,
                           t_address::mirrored_repeat);
 
-    frag.normal = normalize(frag.normal);
-    auto lightDirTransformed = normalize(scene.view * float4(-light.direction, 0)).xyz;
+    auto normalInViewSpace      = normalize(frag.normal);
+    auto lightDirInViewSpace    = normalize(scene.view * float4(-light.direction, 0));
+    auto viewDirInViewSpace     = normalize(-frag.positionInViewSpace);
 
     // TODO: Add tint as a material property
     auto albedo = is_null_texture(tex)
                     ? float4(1,0,1,1)
                     : tex.sample(smp, frag.texcoord.xy);
 
-    auto lambertian = saturate(dot(frag.normal, lightDirTransformed.xyz));
+    auto lambertian = saturate(dot(normalInViewSpace, lightDirInViewSpace.xyz));
 
     auto ambient  = float4(0.2f) * albedo; // TODO: Make the ambient coefficient a Scene property
     auto diffuse  = lambertian * albedo;
-    auto specular = ComputeBlinnSpecular(normalize(-frag.positionInViewSpace).xyz,  // viewDirection
-                                         lightDirTransformed,                       // lightDirection
-                                         frag.normal,                               // normal
-                                         glossy);                                   // glossyCoefficient
+    auto specular = ComputeGaussianSpecular(viewDirInViewSpace.xyz,
+                                            lightDirInViewSpace.xyz,
+                                            normalInViewSpace.xyz,
+                                            roughness);
+
+    // NOTE: When the lambertian is < 0, there should be no specular.
+    // However, I prefer to calculate the specular every time rather than branching on a non-uniform.
+    specular *= mix(0.f, 1.f, lambertian >= 0.f);
 
     auto shadow = is_null_texture(shadowMap)
                     ? 0.f
@@ -99,7 +104,7 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
 
     auto o = light.color * light.intensity * (diffuse + specular) * (1 - shadow) + ambient;
     // Debug normals
-//    o.xyz = (frag.normal + 1.f) * 0.5f;
+//    o.xyz = (normalInViewSpace + 1.f) * 0.5f;
 
     o.a = 1.f;
     //return sqrt(o);

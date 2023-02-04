@@ -90,6 +90,7 @@ auto ComputeShadow(float4 lightSpacePosition, texture2d<float> shadowMap) -> flo
 
 // MARK: - Specular Highlights
 /// Computes the specular highlight following to the Blinn model
+/// All directions (including the normal) must be in the same space.
 /// Parameters:
 ///     - viewDirection
 ///     - lightDirection
@@ -107,6 +108,34 @@ auto ComputeBlinnSpecular(float3 viewDirection,
     auto specularAngle = max(dot(halfVector, normal), 0.f);
 
     return pow(specularAngle, glossyCoefficient);
+}
+
+/// Computes the specular highlight following a Gaussian distribution.
+/// This is more expensive than Blinn speculars, but produces better results with coefficients
+/// conveniently in [0,1].
+/// https://paroj.github.io/gltut/Illumination/Tut11%20Gaussian.html
+///
+/// All directions (including the normal) must be in the same space.
+/// Parameters:
+///     - viewDirection
+///     - lightDirection
+///     - normal
+///     - roughness
+/// Returns:
+///     - Specular Coefficient
+auto ComputeGaussianSpecular(float3 viewDirection,
+                             float3 lightDirection,
+                             float3 normal,
+                             float  roughness)
+-> float
+{
+    auto halfVector = normalize(lightDirection + viewDirection);
+    auto specularAngle = acos(dot(halfVector, normal));
+
+    auto exponent = specularAngle / roughness;
+    exponent *= -exponent;
+
+    return exp(exponent);
 }
 
 #endif /* ShaderLightingUtils_h */
