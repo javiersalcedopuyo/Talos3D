@@ -116,6 +116,26 @@ float ComputeShadow(float4 lightSpacePosition, texture2d<float> shadowMap)
     return PCF(shadowMapCoord.xy, shadowMap, fragDepth, sampleRadius);
 }
 
+/// Computes the specular highlight following to the Blinn model
+/// Parameters:
+///     - viewDirection
+///     - lightDirection
+///     - normal
+///     - glossyCoefficient
+/// Returns:
+///     - Specular Coefficient
+auto ComputeBlinnSpecular(float3 viewDirection,
+                          float3 lightDirection,
+                          float3 normal,
+                          float  glossyCoefficient)
+-> float
+{
+    auto halfVector = normalize(lightDirection + viewDirection);
+    auto specularAngle = max(dot(halfVector, normal), 0.f);
+
+    return pow(specularAngle, glossyCoefficient);
+}
+
 // MARK: - Main functions
 vertex
 VertexOut vertex_main(VertexIn                  vert            [[ stage_in ]],
@@ -160,12 +180,10 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
 
     auto ambient = float3(0.2f);
 
-    auto viewDirection = normalize(-frag.positionInViewSpace).xyz;
-    auto halfVector = normalize(lightDirTransformed + viewDirection);
-    auto specularAngle = max(dot(halfVector, frag.normal), 0.f);
-
-    auto specular = light.color * pow(specularAngle, glossy);
-
+    auto specular = light.color * ComputeBlinnSpecular(normalize(-frag.positionInViewSpace).xyz,
+                                                       lightDirTransformed,
+                                                       frag.normal,
+                                                       glossy);
     auto shadow = is_null_texture(shadowMap)
                     ? 0.f
                     : ComputeShadow(frag.positionInLightSpace, shadowMap);
