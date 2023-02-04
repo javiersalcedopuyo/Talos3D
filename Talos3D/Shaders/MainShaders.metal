@@ -1,6 +1,7 @@
 #include <metal_stdlib>
 
 #include "ShadersCommon.h"
+#include "ShaderLightingUtils.h"
 
 using namespace metal;
 
@@ -43,98 +44,6 @@ struct VertexOut
 };
 
 constant constexpr float glossy = 64.f; // TODO: Make this a material attribute
-
-// MARK: - Helper functions
-/// Percentage-Closer Filtering (PCF) shadow mapping
-/// - Parameters:
-///     - texCoords: Fragment's position in the shadow map
-///     - shadowMap
-///     - fragDepth: Fragment's depth as seen from the camera
-///     - sampleRadius
-/// - Returns:
-///     - shadow: [0,1] How shaded the fragment is (0 = fully lit, 1 = fully shaded)
-float PCF(float2            texCoords,
-          texture2d<float>  shadowMap,
-          float             fragDepth,
-          int               sampleRadius)
-{
-    constexpr sampler smp(min_filter::linear,
-                          mag_filter::linear,
-                          s_address::clamp_to_border,
-                          t_address::clamp_to_border,
-                          border_color::opaque_white);
-
-    auto texelSize = 1.f / float2(shadowMap.get_width(), shadowMap.get_height());
-
-    auto shadow = 0.f;
-    for (int u = -sampleRadius; u <= sampleRadius; ++u)
-    {
-        for (int v = -sampleRadius; v <= sampleRadius; ++v)
-        {
-            auto offset = float2(u,v) * texelSize;
-            auto mapDepth = shadowMap.sample(smp, texCoords.xy + offset).x;
-
-            // NOTE: The bias is already applied in the shadow pass
-            shadow += fragDepth >= mapDepth ? 1.f : 0.f;
-        }
-    }
-
-    return shadow / pow(2 * sampleRadius + 1, 2.f);
-}
-
-/// Transforms the light's space fragment position into the shadow map's space
-/// - Parameters:
-///     - lightSpacePosition
-/// - Returns:
-///     - shadowMapCoord.xy = Shadow map coordinates
-///     - shadowMapCoord.z  = Fragment's depth as seen from the light
-float3 TransformPositionFromLightToShadowMap(float4 lightSpacePosition)
-{
-    // Transform from clip to device coordinate system.
-    // Orthographic projection matrices don't really need it.
-    auto shadowMapCoord = lightSpacePosition / lightSpacePosition.w;
-    // Normalise the coordinates to the [0,1] range.
-    // Depends on the projection matrix and the device coordinate system
-    shadowMapCoord.y = -shadowMapCoord.y;
-    shadowMapCoord.xy = (shadowMapCoord.xy + 1.f) * 0.5f;
-
-    return shadowMapCoord.xyz;
-}
-
-/// Computes the shadow coefficient from a 2D shadow map
-/// Parameters:
-///     - lightSpacePosition
-///     - shadowMap
-/// - Returns:
-///     - shadowCoefficient: [0,1] How shaded the fragment is (0 = fully lit, 1 = fully shaded)
-float ComputeShadow(float4 lightSpacePosition, texture2d<float> shadowMap)
-{
-    auto shadowMapCoord = TransformPositionFromLightToShadowMap(lightSpacePosition);
-    auto fragDepth = shadowMapCoord.z; // NOTE: Depth from the camera!
-
-    auto sampleRadius = 2; // TODO: Make this configurable
-    return PCF(shadowMapCoord.xy, shadowMap, fragDepth, sampleRadius);
-}
-
-/// Computes the specular highlight following to the Blinn model
-/// Parameters:
-///     - viewDirection
-///     - lightDirection
-///     - normal
-///     - glossyCoefficient
-/// Returns:
-///     - Specular Coefficient
-auto ComputeBlinnSpecular(float3 viewDirection,
-                          float3 lightDirection,
-                          float3 normal,
-                          float  glossyCoefficient)
--> float
-{
-    auto halfVector = normalize(lightDirection + viewDirection);
-    auto specularAngle = max(dot(halfVector, normal), 0.f);
-
-    return pow(specularAngle, glossyCoefficient);
-}
 
 // MARK: - Main functions
 vertex
