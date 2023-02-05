@@ -37,6 +37,7 @@ typedef NS_ENUM(NSInteger, BufferIndices)
     OBJECT_MATRICES,
     LIGHTS,
     LIGHT_MATRIX,
+    MATERIAL_PARAMS,
 
     BUFFER_COUNT
 };

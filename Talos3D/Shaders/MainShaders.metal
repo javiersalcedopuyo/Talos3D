@@ -18,13 +18,6 @@ struct ObjectMatrices
     float4x4 normal;
 };
 
-struct DirectionalLight
-{
-    packed_float3 direction;
-    float  intensity;
-    packed_float4 color;
-};
-
 struct VertexIn
 {
     float3 position [[ attribute(POSITION) ]];
@@ -42,8 +35,6 @@ struct VertexOut
     float3 normal;
     float2 texcoord;
 };
-
-constant constexpr float roughness = 0.1f; // TODO: Make this a material attribute
 
 // MARK: - Main functions
 vertex
@@ -63,13 +54,30 @@ VertexOut vertex_main(VertexIn                  vert            [[ stage_in ]],
     return out;
 }
 
+struct DirectionalLight
+{
+    packed_float3 direction;
+    float  intensity;
+    packed_float4 color;
+};
+
+struct MaterialParams
+{
+    packed_float3 tint;
+    float roughness;
+    float metallic;
+
+    packed_float3 padding; // Do I need this?
+};
+
 fragment
 float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
                      texture2d<float>           tex         [[ texture(ALBEDO) ]],
                      texture2d<float>           shadowMap   [[ texture(SHADOW_MAP) ]],
                      constant SceneMatrices&    scene       [[ buffer(SCENE_MATRICES) ]],
                      constant DirectionalLight& light       [[ buffer(LIGHTS) ]],
-                     constant float4x4&         lightMatrix [[ buffer(LIGHT_MATRIX) ]])
+                     constant float4x4&         lightMatrix [[ buffer(LIGHT_MATRIX) ]],
+                     constant MaterialParams&   material    [[ buffer(MATERIAL_PARAMS) ]])
 {
     constexpr sampler smp(min_filter::nearest,
                           mag_filter::linear,
@@ -80,10 +88,11 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
     auto lightDirInViewSpace    = normalize(scene.view * float4(-light.direction, 0));
     auto viewDirInViewSpace     = normalize(-frag.positionInViewSpace);
 
-    // TODO: Add tint as a material property
     auto albedo = is_null_texture(tex)
                     ? float4(1,0,1,1)
                     : tex.sample(smp, frag.texcoord.xy);
+
+    albedo.rgb *= material.tint;
 
     auto lambertian = saturate(dot(normalInViewSpace, lightDirInViewSpace.xyz));
 
@@ -92,7 +101,7 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
     auto specular = ComputeGaussianSpecular(viewDirInViewSpace.xyz,
                                             lightDirInViewSpace.xyz,
                                             normalInViewSpace.xyz,
-                                            roughness);
+                                            material.roughness);
 
     // NOTE: When the lambertian is < 0, there should be no specular.
     // However, I prefer to calculate the specular every time rather than branching on a non-uniform.

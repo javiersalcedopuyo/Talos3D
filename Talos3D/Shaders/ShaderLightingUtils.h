@@ -112,7 +112,7 @@ auto ComputeBlinnSpecular(float3 viewDirection,
 
 /// Computes the specular highlight following a Gaussian distribution.
 /// This is more expensive than Blinn speculars, but produces better results with coefficients
-/// conveniently in [0,1].
+/// conveniently in (0,1].
 /// https://paroj.github.io/gltut/Illumination/Tut11%20Gaussian.html
 ///
 /// All directions (including the normal) must be in the same space.
@@ -122,7 +122,7 @@ auto ComputeBlinnSpecular(float3 viewDirection,
 ///     - normal
 ///     - roughness
 /// Returns:
-///     - Specular Coefficient
+///     - specularCoefficient
 auto ComputeGaussianSpecular(float3 viewDirection,
                              float3 lightDirection,
                              float3 normal,
@@ -135,7 +135,12 @@ auto ComputeGaussianSpecular(float3 viewDirection,
     auto exponent = specularAngle / roughness;
     exponent *= -exponent;
 
-    return exp(exponent);
+    auto specularCoefficient = exp(exponent);
+
+    // FIXME: This is just a hack to solve energy conservation issues with directional lights
+    specularCoefficient *= 1 - roughness;
+
+    return specularCoefficient;
 }
 
 #endif /* ShaderLightingUtils_h */

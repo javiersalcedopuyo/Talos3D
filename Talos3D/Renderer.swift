@@ -16,6 +16,7 @@ let SCENE_MATRICES_INDEX        = BufferIndices.SCENE_MATRICES.rawValue
 let OBJECT_MATRICES_INDEX       = BufferIndices.OBJECT_MATRICES.rawValue
 let LIGHTS_BUFFER_INDEX         = BufferIndices.LIGHTS.rawValue
 let LIGHT_MATRIX_INDEX          = BufferIndices.LIGHT_MATRIX.rawValue
+let MATERIAL_PARAMS_INDEX       = BufferIndices.MATERIAL_PARAMS.rawValue
 
 let ALBEDO_MAP_INDEX            = TextureIndices.ALBEDO.rawValue
 let SHADOW_MAP_INDEX            = TextureIndices.SHADOW_MAP.rawValue
@@ -433,6 +434,8 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             material2.swapTexture(idx: 0, newTexture: tex)
         }
+        material2.params.setTint(Vector3(x:1, y:1, z:0))
+        material2.params.setRoughness(0.15)
 
         var whiteTex = Texture(mtlTexture: self.dummyTexture,
                                label: "Dummy")
@@ -593,6 +596,10 @@ public class Renderer: NSObject, MTKViewDelegate
                 self.currentlyBoundPipelineID = psoID
             }
             encoder.setFrontFacing(object.getWinding())
+
+            encoder.setFragmentBytes(material.params.getPackedData(),
+                                     length: MaterialParams.packedSize,
+                                     index: MATERIAL_PARAMS_INDEX)
 
             // Set Textures
             for texture in material.textures
