@@ -48,24 +48,25 @@ class DirectionalLight : LightSource
 
     public func getBufferData() -> [Float]
     {
-        // TODO: Refactor this ugly mess
         var data = [Float](repeating: 0.0, count: 8)
         data[0] = self.transform.getForward().x
         data[1] = self.transform.getForward().y
         data[2] = self.transform.getForward().z
+        data[3] = 0 // Padding
 
-        data[3] = self.intensity
+        // Pre-multiply the intensity with the color to save bandwidth
+        let preMultipliedColor = self.color * self.intensity
+        data[4] = preMultipliedColor.r()
+        data[5] = preMultipliedColor.g()
+        data[6] = preMultipliedColor.b()
+        data[7] = preMultipliedColor.a()
 
-        data[4] = self.color.r()
-        data[5] = self.color.g()
-        data[6] = self.color.b()
-        data[7] = self.color.a()
         return data
     }
 
     public func getBufferSize() -> Int
     {
-        return MemoryLayout<Float>.size * 8
+        return MemoryLayout<Vector4>.size * 2
     }
 
     // MARK: Positionable methods

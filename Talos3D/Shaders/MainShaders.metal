@@ -56,9 +56,8 @@ VertexOut vertex_main(VertexIn                  vert            [[ stage_in ]],
 
 struct DirectionalLight
 {
-    packed_float3 direction;
-    float  intensity;
-    packed_float4 color;
+    float3 direction;
+    float4 color;
 };
 
 struct MaterialParams
@@ -111,7 +110,7 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
                     ? 0.f
                     : ComputeShadow(frag.positionInLightSpace, shadowMap);
 
-    auto o = light.color * light.intensity * (diffuse + specular) * (1 - shadow) + ambient;
+    auto o = light.color * (diffuse + specular) * (1 - shadow) + ambient;
     // Debug normals
 //    o.xyz = (normalInViewSpace + 1.f) * 0.5f;
 
