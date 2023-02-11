@@ -66,13 +66,12 @@ public class Renderer: NSObject, MTKViewDelegate
                                               format: .depth16Unorm,
                                               device: device)
 
+        self.depthStencil = Self.createDepthStencilTexture(width:  Int(mtkView.drawableSize.width),
+                                                           height: Int(mtkView.drawableSize.height),
+                                                           format: .depth32Float_stencil8,
+                                                           device: device)
+
         self.defaultMaterial = Material(pipeline: self.defaultPipeline)
-
-        let depthStencilDesc = MTLDepthStencilDescriptor()
-        depthStencilDesc.depthCompareFunction = .less
-        depthStencilDesc.isDepthWriteEnabled  = true
-
-        mDepthStencilState = device.makeDepthStencilState(descriptor: depthStencilDesc)
 
         guard let dummy = Self.createMetalTexture(size: MTLSize(width: 1, height: 1, depth: 1),
                                                   initialValue: 128,
@@ -85,6 +84,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
         super.init()
 
+        self.createDepthStencilStates(device: device)
         self.createMaterials(device: device)
         self.buildScene(device: device)
         mView.delegate = self
@@ -188,6 +188,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
         self.renderShadowMap()
         self.renderScene()
+        self.renderSkybox()
 
         self.endFrame()
     }
@@ -217,6 +218,7 @@ public class Renderer: NSObject, MTKViewDelegate
         self.currentCommandBuffer = nil // ARC should take care of deallocating this
     }
 
+    /// Shadow pass. Renders the scene from the light's perspective into the shadow map
     func renderShadowMap()
     {
         let renderPassDesc = MTLRenderPassDescriptor()
@@ -230,7 +232,7 @@ public class Renderer: NSObject, MTKViewDelegate
             return
         }
         commandEncoder.label = "Shadow pass"
-        commandEncoder.setDepthStencilState(mDepthStencilState)
+        commandEncoder.setDepthStencilState(self.shadowDepthStencilState)
         commandEncoder.setDepthBias(1, slopeScale: 3, clamp: 1/128)
 
         self.boundResources.removeAll()
@@ -255,6 +257,7 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder.endEncoding()
     }
 
+    /// Main pass. Renders the scene objects in a forward way.
     func renderScene()
     {
         let view = self.scene.mainCamera.getView()
@@ -266,7 +269,13 @@ public class Renderer: NSObject, MTKViewDelegate
             SimpleLogs.ERROR("No render pass descriptor. Skipping pass.")
             return
         }
-        renderPassDesc.depthAttachment.storeAction = .dontCare
+        renderPassDesc.depthAttachment.texture          = self.depthStencil
+        renderPassDesc.depthAttachment.loadAction       = .clear
+        renderPassDesc.depthAttachment.storeAction      = .dontCare
+
+        renderPassDesc.stencilAttachment.texture        = self.depthStencil
+        renderPassDesc.stencilAttachment.loadAction     = .clear
+        renderPassDesc.stencilAttachment.storeAction    = .dontCare
 
         guard let commandEncoder = self.currentCommandBuffer?
                                        .makeRenderCommandEncoder(descriptor: renderPassDesc) else
@@ -278,7 +287,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
         self.boundResources.removeAll()
 
-        commandEncoder.setDepthStencilState(mDepthStencilState)
+        commandEncoder.setDepthStencilState(self.mainDepthStencilState)
 
         // Set Scene buffers
         commandEncoder.setVertexBytes(view.asPackedArray() + proj.asPackedArray(),
@@ -313,6 +322,12 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder.endEncoding()
     }
 
+    /// Renders the skybox
+    public func renderSkybox()
+    {
+        SimpleLogs.UNIMPLEMENTED("")
+    }
+
     public var mView: MTKView
 
     // MARK: - Private
@@ -344,7 +359,8 @@ public class Renderer: NSObject, MTKViewDelegate
         pipelineDescriptor.vertexFunction                   = library.makeFunction(name: "default_vertex_main")
         pipelineDescriptor.fragmentFunction                 = library.makeFunction(name: "default_fragment_main")
         pipelineDescriptor.vertexDescriptor                 = Model.getNewVertexDescriptor()
-        pipelineDescriptor.depthAttachmentPixelFormat       = view.depthStencilPixelFormat
+        pipelineDescriptor.depthAttachmentPixelFormat       = .depth32Float_stencil8
+        pipelineDescriptor.stencilAttachmentPixelFormat     = .depth32Float_stencil8
 
         guard let defaultPipeline = Pipeline(desc: pipelineDescriptor,
                                              device: device,
@@ -364,11 +380,14 @@ public class Renderer: NSObject, MTKViewDelegate
         }
 
         pipelineDescriptor.label                            = "Shadow Pass PSO"
-        // We don't need a color attachment or a fragment function because we just want the depth
+        // We don't need a color attachment, stencil buffer or fragment function because we just want the depth
         pipelineDescriptor.colorAttachments[0].pixelFormat  = .invalid
+        pipelineDescriptor.stencilAttachmentPixelFormat     = .invalid
         pipelineDescriptor.fragmentFunction                 = nil
         pipelineDescriptor.vertexFunction                   = library.makeFunction(name: "shadow_vertex_main")
         pipelineDescriptor.vertexDescriptor                 = Model.getNewVertexDescriptor()
+        pipelineDescriptor.depthAttachmentPixelFormat       = .depth16Unorm // TODO: Tie this to the shadow map
+        
         guard let shadowPipeline = Pipeline(desc: pipelineDescriptor,
                                             device: device,
                                             type: .Shadows) else
@@ -410,6 +429,67 @@ public class Renderer: NSObject, MTKViewDelegate
         shadowMap.label = "Shadow Map"
 
         return shadowMap
+    }
+
+    /// Creates a new texture to be used as a depth/stencil buffer
+    /// - Parameters:
+    ///     - width
+    ///     - height
+    ///     - format: Must be a depth/stencil format
+    ///     - device: The MTLDevice that will create the texture
+    /// - Returns:
+    ///     - depthStencil
+    static private func createDepthStencilTexture(width:  Int,
+                                                  height: Int,
+                                                  format: MTLPixelFormat,
+                                                  device: MTLDevice)
+    -> MTLTexture
+    {
+        assert(format == .depth16Unorm || format == .depth32Float ||
+               format == .stencil8 ||
+               format == .depth24Unorm_stencil8 || format == .depth32Float_stencil8)
+
+        let desc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: format,
+                                                            width:       width,
+                                                            height:      height,
+                                                            mipmapped:   false)
+        desc.storageMode = .private
+        desc.usage       = .renderTarget
+        desc.sampleCount = 1
+
+        guard let ds = device.makeTexture(descriptor: desc) else
+        {
+            // TODO: Handle this gracefully
+            fatalError("Couldn't create the depth/stencil")
+        }
+        return ds
+    }
+
+    /// Creates the internal depth/stencil states
+    /// - Parameters:
+    ///     - device: The MTLDevice used to create the states
+    private func createDepthStencilStates(device: MTLDevice)
+    {
+        let depthStencilDesc = MTLDepthStencilDescriptor()
+        depthStencilDesc.depthCompareFunction = .less
+        depthStencilDesc.isDepthWriteEnabled  = true
+
+        guard let sds = device.makeDepthStencilState(descriptor: depthStencilDesc) else
+        {
+            fatalError("Couldn't create the shadow depth/stencil state")
+        }
+        self.shadowDepthStencilState = sds
+
+        let stencilDesc = MTLStencilDescriptor()
+        stencilDesc.depthStencilPassOperation = .incrementClamp
+
+        depthStencilDesc.frontFaceStencil = stencilDesc
+        depthStencilDesc.backFaceStencil  = stencilDesc
+        guard let mds = device.makeDepthStencilState(descriptor: depthStencilDesc) else
+        {
+            fatalError("Couldn't create the shadow depth/stencil state")
+        }
+        self.mainDepthStencilState = mds
     }
 
     private func createMaterials(device: MTLDevice)
@@ -724,9 +804,11 @@ public class Renderer: NSObject, MTKViewDelegate
     private let shadowPipeline: Pipeline
     private var currentlyBoundPipelineID: ObjectIdentifier? = nil // TODO: Per encoder
 
-    private var mDepthStencilState: MTLDepthStencilState?
+    private var mainDepthStencilState:      MTLDepthStencilState!
+    private var shadowDepthStencilState:    MTLDepthStencilState!
 
-    private var shadowMap: MTLTexture
+    private var shadowMap:    MTLTexture
+    private var depthStencil: MTLTexture
     private let dummyTexture: MTLTexture
 
     private var scene: Scene!
