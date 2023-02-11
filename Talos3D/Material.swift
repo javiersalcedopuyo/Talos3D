@@ -11,8 +11,9 @@ import SimpleLogs
 
 public class Material : NSCopying
 {
-    init(pipeline pso: Pipeline)
+    init(pipeline pso: Pipeline, label name: String = "")
     {
+        label    = name
         pipeline = pso
         params   = MaterialParams()
         textures = []
@@ -47,6 +48,7 @@ public class Material : NSCopying
     var params:   MaterialParams
     var textures: [Texture]
     var samplers: [MTLSamplerState]
+    var label:     String
 }
 
 struct MaterialParams

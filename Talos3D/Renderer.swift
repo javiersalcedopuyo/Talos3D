@@ -419,7 +419,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
     private func createMaterials(device: MTLDevice)
     {
-        let material1 = Material(pipeline: self.mainPipeline)
+        let material1 = Material(pipeline: self.mainPipeline, label: TEST_MATERIAL_NAME_1)
         if let tex = Self.loadTexture(name: TEST_TEXTURE_NAME_1,
                                       index: ALBEDO_MAP_INDEX,
                                       device: device)
@@ -428,6 +428,7 @@ public class Renderer: NSObject, MTKViewDelegate
         }
 
         let material2 = material1.copy() as! Material
+        material2.label = TEST_MATERIAL_NAME_2
         if let tex = Self.loadTexture(name: TEST_TEXTURE_NAME_2,
                                       index: ALBEDO_MAP_INDEX,
                                       device: device)
@@ -442,6 +443,7 @@ public class Renderer: NSObject, MTKViewDelegate
         whiteTex.setIndex(0, stage: .Fragment)
 
         let material3 = material1.copy() as! Material
+        material3.label = WHITE_MATERIAL_NAME
         material3.swapTexture(idx: 0, newTexture: whiteTex)
 
         self.materials[TEST_MATERIAL_NAME_1] = material1
@@ -621,7 +623,7 @@ public class Renderer: NSObject, MTKViewDelegate
         case .Shadows:
             break // The shadow passes don't have a fragment stage and don't need materials
 
-        case .GBuffer, .DeferredLighting:
+        case .GBuffer, .DeferredComposite:
             UNIMPLEMENTED("Deferred rendering is not supported yet.") // TODO: Deferred Rendering
         }
 

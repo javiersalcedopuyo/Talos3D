@@ -36,5 +36,5 @@ enum PassType
     case Shadows
     case GBuffer
     case ForwardLighting
-    case DeferredLighting
+    case DeferredComposite
 }
