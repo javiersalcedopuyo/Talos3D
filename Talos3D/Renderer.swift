@@ -244,12 +244,7 @@ public class Renderer: NSObject, MTKViewDelegate
                                       index: SCENE_MATRICES_INDEX)
 
         // All objects in the shadow pass use the same PSO
-        let psoID = ObjectIdentifier(self.shadowPipeline)
-        if  psoID != self.currentlyBoundPipelineID
-        {
-            commandEncoder.setRenderPipelineState(self.shadowPipeline.state)
-            self.currentlyBoundPipelineID = psoID
-        }
+        self.bind(pipeline: self.shadowPipeline, inEncoder: commandEncoder)
 
         for model in self.scene.objects
         {
@@ -594,12 +589,8 @@ public class Renderer: NSObject, MTKViewDelegate
 
             // TODO: Sort the models by material
             let material = object.getMaterial()
-            let psoID = ObjectIdentifier(material.pipeline)
-            if psoID != self.currentlyBoundPipelineID
-            {
-                encoder.setRenderPipelineState(material.pipeline.state)
-                self.currentlyBoundPipelineID = psoID
-            }
+            self.bind(pipeline: material.pipeline, inEncoder: encoder)
+
             encoder.setFrontFacing(object.getWinding())
 
             encoder.setFragmentBytes(material.params.getPackedData(),
@@ -709,6 +700,21 @@ public class Renderer: NSObject, MTKViewDelegate
         self.boundResources[bindPoint] = id
     }
 
+    /// Binds a Pipeline State if it's not already bound
+    /// - Parameters:
+    ///     - pipeline
+    ///     - encoder
+    private func bind(pipeline: Pipeline, inEncoder encoder: MTLRenderCommandEncoder)
+    {
+        // TODO: Track them per encoder so it can be used in a multithreaded way
+        let psoID = ObjectIdentifier(pipeline)
+        if  psoID != self.currentlyBoundPipelineID
+        {
+            encoder.setRenderPipelineState(pipeline.state)
+            self.currentlyBoundPipelineID = psoID
+        }
+    }
+
     private let commandQueue:  MTLCommandQueue
     private var currentCommandBuffer: MTLCommandBuffer?
 
@@ -716,7 +722,7 @@ public class Renderer: NSObject, MTKViewDelegate
     private let mainPipeline: Pipeline
     private let defaultPipeline: Pipeline
     private let shadowPipeline: Pipeline
-    private var currentlyBoundPipelineID: ObjectIdentifier? = nil
+    private var currentlyBoundPipelineID: ObjectIdentifier? = nil // TODO: Per encoder
 
     private var mDepthStencilState: MTLDepthStencilState?
 
@@ -728,5 +734,5 @@ public class Renderer: NSObject, MTKViewDelegate
     private let defaultMaterial: Material
     private var materials: [String: Material] = [:]
 
-    private var boundResources: [BindingPoint: ObjectIdentifier] = [:]
+    private var boundResources: [BindingPoint: ObjectIdentifier] = [:] // TODO: Per encoder?
 }
