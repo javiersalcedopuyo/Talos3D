@@ -19,6 +19,7 @@ public class Model : Renderable
 {
     // MARK: - Public Members
     public var faceCulling: MTLCullMode
+    public var label: String
 
     // MARK: - Public Methods
     /// Constructor
@@ -26,13 +27,16 @@ public class Model : Renderable
     ///     - device: Needed to load the meshes
     ///     - url: The URL of the model file
     ///     - material
+    ///     - label: Optional. Empty by default.
     ///     - culling: Face culling mode. Assumes most models will be closed so it's BACK by default
     init(device: MTLDevice,
          url: URL,
          material mat: Material,
+         label name: String = "",
          culling: MTLCullMode = .back)
     {
         self.material = mat
+        self.label = name
 
         let vertexDesc = self.material.pipeline.descriptor.vertexDescriptor
         if vertexDesc == nil
@@ -47,7 +51,7 @@ public class Model : Renderable
         mTransform = Transform()
         self.faceCulling = culling
 
-        self.getVertexBuffer().label = "Vertex Buffer"
+        self.getVertexBuffer().label = name + "'s Vertex Buffer"
     }
 
     public func flipHandedness()

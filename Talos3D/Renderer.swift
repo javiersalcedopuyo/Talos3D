@@ -481,7 +481,8 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             let model = Model(device: device,
                               url: modelURL,
-                              material: self.materials[WHITE_MATERIAL_NAME] ?? self.defaultMaterial)
+                              material: self.materials[WHITE_MATERIAL_NAME] ?? self.defaultMaterial,
+                              label: "Stanford Bunny")
 
             let rotDegrees = SLA.rad2deg(0.5 * TAU)
             model.rotate(localEulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
@@ -502,6 +503,7 @@ public class Renderer: NSObject, MTKViewDelegate
             let model = Model(device: device,
                               url: modelURL,
                               material: self.materials[TEST_MATERIAL_NAME_2] ?? self.defaultMaterial,
+                              label: "Utah Teapot",
                               culling: .none)
 
             model.scale(by: 0.01)
@@ -521,6 +523,7 @@ public class Renderer: NSObject, MTKViewDelegate
             let model = Model(device: device,
                               url: modelURL,
                               material: self.materials[TEST_MATERIAL_NAME_1] ?? self.defaultMaterial,
+                              label: "Floor",
                               culling: .none)
 
             scene.add(object: model)
