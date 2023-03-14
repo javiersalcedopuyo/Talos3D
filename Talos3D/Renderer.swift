@@ -188,7 +188,6 @@ public class Renderer: NSObject, MTKViewDelegate
 
         self.renderShadowMap()
         self.renderScene()
-        self.renderSkybox()
 
         self.endFrame()
     }
@@ -319,13 +318,19 @@ public class Renderer: NSObject, MTKViewDelegate
                                 passType:   .ForwardLighting)
         }
 
-        commandEncoder.endEncoding()
-    }
+        if let skybox = self.scene.skybox
+        {
+            commandEncoder.setDepthStencilState(self.skyboxDepthStencilState)
+            commandEncoder.setStencilReferenceValue(0) // We only want to write to the untouched fragments
 
-    /// Renders the skybox
-    public func renderSkybox()
-    {
-        SimpleLogs.UNIMPLEMENTED("")
+            self.bind(pipeline: self.defaultPipeline, inEncoder: commandEncoder)
+
+            encodeRenderCommand(encoder:    commandEncoder,
+                                object:     skybox,
+                                passType:   .ForwardLighting)
+        }
+
+        commandEncoder.endEncoding()
     }
 
     public var mView: MTKView
@@ -470,6 +475,7 @@ public class Renderer: NSObject, MTKViewDelegate
     ///     - device: The MTLDevice used to create the states
     private func createDepthStencilStates(device: MTLDevice)
     {
+        // Shadow
         let depthStencilDesc = MTLDepthStencilDescriptor()
         depthStencilDesc.depthCompareFunction = .less
         depthStencilDesc.isDepthWriteEnabled  = true
@@ -480,8 +486,10 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         self.shadowDepthStencilState = sds
 
+        // Main
         let stencilDesc = MTLStencilDescriptor()
-        stencilDesc.depthStencilPassOperation = .incrementClamp
+        stencilDesc.depthStencilPassOperation   = .incrementClamp
+        stencilDesc.stencilCompareFunction      = .always // The main pass always writes to the stencil
 
         depthStencilDesc.frontFaceStencil = stencilDesc
         depthStencilDesc.backFaceStencil  = stencilDesc
@@ -490,6 +498,23 @@ public class Renderer: NSObject, MTKViewDelegate
             fatalError("Couldn't create the shadow depth/stencil state")
         }
         self.mainDepthStencilState = mds
+
+        // Skybox
+        stencilDesc.stencilCompareFunction = .equal // Only write to the untouched fragments
+
+        let skyboxDSDesc = MTLDepthStencilDescriptor()
+        skyboxDSDesc.frontFaceStencil       = stencilDesc
+        // The screen-space quad will be in front of the camera so we have to ignore the depth
+        skyboxDSDesc.isDepthWriteEnabled    = false
+        skyboxDSDesc.depthCompareFunction   = .always
+        if let ds = device.makeDepthStencilState(descriptor: skyboxDSDesc)
+        {
+            self.skyboxDepthStencilState = ds
+        }
+        else
+        {
+            fatalError("Couldn't create the screen space depth/stencil state")
+        }
     }
 
     private func createMaterials(device: MTLDevice)
@@ -602,6 +627,32 @@ public class Renderer: NSObject, MTKViewDelegate
                               culling: .none)
 
             scene.add(object: model)
+        }
+        else
+        {
+            SimpleLogs.ERROR("Couldn't load model '" + QUAD_MODEL_NAME + "." + OBJ_FILE_EXTENSION + "'")
+        }
+
+        // TODO: Replace with a triangle
+        // SCREEN QUAD
+        if let modelURL = Bundle.main.url(forResource: QUAD_MODEL_NAME,
+                                          withExtension: OBJ_FILE_EXTENSION)
+        {
+            let model = Model(device: device,
+                              url: modelURL,
+                              material: self.defaultMaterial, // TODO: Skybox material
+                              label: "Screen Space Skybox",
+                              culling: .back)
+
+
+            let rotDegrees = SLA.rad2deg(-0.25 * TAU);
+            model.rotate(localEulerAngles: Vector3(x:rotDegrees, y:0, z:0))
+
+            let cam = self.scene.mainCamera
+            // FIXME: Scale and align it to properly fit the camera near plane
+            model.move(to: cam.getPosition() + cam.transform.getForward() * cam.getNear() * 2)
+
+            self.scene.set(skybox: model)
         }
         else
         {
@@ -806,6 +857,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
     private var mainDepthStencilState:      MTLDepthStencilState!
     private var shadowDepthStencilState:    MTLDepthStencilState!
+    private var skyboxDepthStencilState:    MTLDepthStencilState!
 
     private var shadowMap:    MTLTexture
     private var depthStencil: MTLTexture

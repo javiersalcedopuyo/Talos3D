@@ -32,12 +32,20 @@ class Scene
         return self
     }
 
+    @discardableResult
+    func set(skybox quad: Renderable) -> Self
+    {
+        self.skybox = quad
+        return self
+    }
+
     var mainCamera: Camera { self.cameras[0] }
 
     // MARK: - Private
     private(set) var cameras: [Camera]      = []
     private(set) var lights:  [LightSource] = []
     private(set) var objects: [Renderable]  = []
+    private(set) var skybox:  Renderable?   = nil
     // TODO: private func makeBuffers(device: MTLDevice)
     // TODO: private var buffers: [String: MTLBuffer]
 }
