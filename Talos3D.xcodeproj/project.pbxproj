@@ -35,6 +35,7 @@
 		859CEA49277E4763001D07B7 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 859CEA48277E4763001D07B7 /* Model.swift */; };
 		859CEA4E277E4D4F001D07B7 /* bunny.obj in Resources */ = {isa = PBXBuildFile; fileRef = 859CEA4D277E4B63001D07B7 /* bunny.obj */; };
 		85B0DC4F292442DD00E7E8F7 /* quad.obj in Resources */ = {isa = PBXBuildFile; fileRef = 85B0DC4E292442DD00E7E8F7 /* quad.obj */; };
+		85BD8DA229C779F700211FB2 /* Skybox.metal in Sources */ = {isa = PBXBuildFile; fileRef = 85D09E0329C3BD550006FB19 /* Skybox.metal */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -79,6 +80,7 @@
 		859CEA48277E4763001D07B7 /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
 		859CEA4D277E4B63001D07B7 /* bunny.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = bunny.obj; sourceTree = "<group>"; };
 		85B0DC4E292442DD00E7E8F7 /* quad.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = quad.obj; sourceTree = "<group>"; };
+		85D09E0329C3BD550006FB19 /* Skybox.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Skybox.metal; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -169,6 +171,7 @@
 				8522E134298F1E3E001D9B45 /* ShaderLightingUtils.h */,
 				858CFEBA28C54E140095EB29 /* DefaultShaders.metal */,
 				85362B4429466534001A2E6C /* ShadowPass.metal */,
+				85D09E0329C3BD550006FB19 /* Skybox.metal */,
 			);
 			path = Shaders;
 			sourceTree = "<group>";
@@ -319,6 +322,7 @@
 				85405CD928B1671A00272372 /* Buffer.swift in Sources */,
 				859CEA45277E45A9001D07B7 /* MainShaders.metal in Sources */,
 				85391C7528AEDE4600D56B55 /* Pipeline.swift in Sources */,
+				85BD8DA229C779F700211FB2 /* Skybox.metal in Sources */,
 				858A021128832E710033ED54 /* Renderable.swift in Sources */,
 				859CEA29277DE361001D07B7 /* GameViewController.swift in Sources */,
 				85308EA828BD0AA2002D510F /* Scene.swift in Sources */,

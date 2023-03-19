@@ -37,4 +37,5 @@ enum PassType
     case GBuffer
     case ForwardLighting
     case DeferredComposite
+    case ScreenSpace
 }

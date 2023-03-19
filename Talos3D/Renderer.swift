@@ -59,7 +59,8 @@ public class Renderer: NSObject, MTKViewDelegate
 
         (self.defaultPipeline,
          self.shadowPipeline,
-         self.mainPipeline) = Self.createPipelines(view: mView)
+         self.mainPipeline,
+         self.skyboxPipeline) = Self.createPipelines(view: mView)
 
         self.shadowMap = Self.createShadowMap(width: 512,
                                               height: 512,
@@ -72,6 +73,7 @@ public class Renderer: NSObject, MTKViewDelegate
                                                            device: device)
 
         self.defaultMaterial = Material(pipeline: self.defaultPipeline)
+        self.skyboxMaterial  = Material(pipeline: self.skyboxPipeline)
 
         guard let dummy = Self.createMetalTexture(size: MTLSize(width: 1, height: 1, depth: 1),
                                                   initialValue: 128,
@@ -323,11 +325,9 @@ public class Renderer: NSObject, MTKViewDelegate
             commandEncoder.setDepthStencilState(self.skyboxDepthStencilState)
             commandEncoder.setStencilReferenceValue(0) // We only want to write to the untouched fragments
 
-            self.bind(pipeline: self.defaultPipeline, inEncoder: commandEncoder)
-
             encodeRenderCommand(encoder:    commandEncoder,
                                 object:     skybox,
-                                passType:   .ForwardLighting)
+                                passType:   .ScreenSpace)
         }
 
         commandEncoder.endEncoding()
@@ -345,8 +345,9 @@ public class Renderer: NSObject, MTKViewDelegate
     ///    - Main: Pipeline used by the main render pass
     // TODO: This is slowly getting out of control. Refactor.
     static private func createPipelines(view: MTKView) -> (default: Pipeline,
-                                                           shadow: Pipeline,
-                                                           main: Pipeline)
+                                                           shadow:  Pipeline,
+                                                           main:    Pipeline,
+                                                           skybox:  Pipeline)
     {
         guard let device = view.device else
         {
@@ -400,7 +401,24 @@ public class Renderer: NSObject, MTKViewDelegate
             fatalError("Couldn't create shadow pipeline state")
         }
 
-        return (defaultPipeline, shadowPipeline, mainPipeline)
+        let skyboxPipelineDesc = MTLRenderPipelineDescriptor()
+        skyboxPipelineDesc.label                            = "Skybox PSO"
+        skyboxPipelineDesc.colorAttachments[0].pixelFormat  = view.colorPixelFormat
+        skyboxPipelineDesc.vertexFunction                   = library.makeFunction(name: "skybox_vertex_main")
+        skyboxPipelineDesc.fragmentFunction                 = library.makeFunction(name: "skybox_fragment_main")
+        skyboxPipelineDesc.vertexDescriptor                 = MTLVertexDescriptor() // Empty
+        skyboxPipelineDesc.depthAttachmentPixelFormat       = .depth32Float_stencil8
+        skyboxPipelineDesc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
+
+        guard let skyboxPipeline = Pipeline(desc:   skyboxPipelineDesc,
+                                            device: device,
+                                            type:   .ScreenSpace)
+        else
+        {
+            fatalError("Couldn't create the skybox pipeline state")
+        }
+
+        return (defaultPipeline, shadowPipeline, mainPipeline, skyboxPipeline)
     }
 
     /// Creates a new texture to be used as a shadow map
@@ -640,17 +658,9 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             let model = Model(device: device,
                               url: modelURL,
-                              material: self.defaultMaterial, // TODO: Skybox material
+                              material: self.skyboxMaterial, // TODO: Skybox material
                               label: "Screen Space Skybox",
                               culling: .back)
-
-
-            let rotDegrees = SLA.rad2deg(-0.25 * TAU);
-            model.rotate(localEulerAngles: Vector3(x:rotDegrees, y:0, z:0))
-
-            let cam = self.scene.mainCamera
-            // FIXME: Scale and align it to properly fit the camera near plane
-            model.move(to: cam.getPosition() + cam.transform.getForward() * cam.getNear() * 2)
 
             self.scene.set(skybox: model)
         }
@@ -714,12 +724,17 @@ public class Renderer: NSObject, MTKViewDelegate
         case .ForwardLighting:
             objMatrixData.append(contentsOf: object.getNormalMatrix().asPackedArray() )
 
+            encoder.setVertexBytes(objMatrixData,
+                                   length: MemoryLayout<Float>.size * objMatrixData.count,
+                                   index: OBJECT_MATRICES_INDEX)
+
             encoder.setFragmentBytes(objMatrixData,
                                      length: MemoryLayout<Float>.size * objMatrixData.count,
                                      index: OBJECT_MATRICES_INDEX)
 
             // TODO: Sort the models by material
             let material = object.getMaterial()
+            assert(material.pipeline.type == .ForwardLighting)
             self.bind(pipeline: material.pipeline, inEncoder: encoder)
 
             encoder.setFrontFacing(object.getWinding())
@@ -746,15 +761,41 @@ public class Renderer: NSObject, MTKViewDelegate
             }
 
         case .Shadows:
-            break // The shadow passes don't have a fragment stage and don't need materials
+            // The shadow passes don't have a fragment stage and don't need materials
+            encoder.setVertexBytes(objMatrixData,
+                                   length: MemoryLayout<Float>.size * objMatrixData.count,
+                                   index: OBJECT_MATRICES_INDEX)
+            break
+
+        case .ScreenSpace:
+            // A screen space pass won't need the object's matrices because the transformed position
+            // is fixed.
+            // It won't need the material parameters either because doesn't have a "real" material.
+            let material = object.getMaterial()
+            assert(material.pipeline.type == .ScreenSpace)
+            self.bind(pipeline: material.pipeline, inEncoder: encoder)
+
+            // Set Textures
+            for texture in material.textures
+            {
+                if let idx = texture.getIndexAtStage(.Vertex)
+                {
+                    self.bind(texture: texture.getResource() as! MTLTexture,
+                              at: BindingPoint(index: idx, stage: .Vertex),
+                              inEncoder: encoder)
+                }
+                if let idx = texture.getIndexAtStage(.Fragment)
+                {
+                    self.bind(texture: texture.getResource() as! MTLTexture,
+                              at: BindingPoint(index: idx, stage: .Fragment),
+                              inEncoder: encoder)
+                }
+            }
+            break
 
         case .GBuffer, .DeferredComposite:
             UNIMPLEMENTED("Deferred rendering is not supported yet.") // TODO: Deferred Rendering
         }
-
-        encoder.setVertexBytes(objMatrixData,
-                               length: MemoryLayout<Float>.size * objMatrixData.count,
-                               index: OBJECT_MATRICES_INDEX)
 
         // Draw
         for submesh in object.getMesh().submeshes
@@ -853,6 +894,7 @@ public class Renderer: NSObject, MTKViewDelegate
     private let mainPipeline: Pipeline
     private let defaultPipeline: Pipeline
     private let shadowPipeline: Pipeline
+    private let skyboxPipeline: Pipeline
     private var currentlyBoundPipelineID: ObjectIdentifier? = nil // TODO: Per encoder
 
     private var mainDepthStencilState:      MTLDepthStencilState!
@@ -866,6 +908,7 @@ public class Renderer: NSObject, MTKViewDelegate
     private var scene: Scene!
 
     private let defaultMaterial: Material
+    private let skyboxMaterial: Material
     private var materials: [String: Material] = [:]
 
     private var boundResources: [BindingPoint: ObjectIdentifier] = [:] // TODO: Per encoder?
