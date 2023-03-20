@@ -20,6 +20,7 @@ let MATERIAL_PARAMS_INDEX       = BufferIndices.MATERIAL_PARAMS.rawValue
 
 let ALBEDO_MAP_INDEX            = TextureIndices.ALBEDO.rawValue
 let SHADOW_MAP_INDEX            = TextureIndices.SHADOW_MAP.rawValue
+let SKYBOX_INDEX                = TextureIndices.SKYBOX.rawValue
 
 let WORLD_UP = Vector3(x:0, y:1, z:0)
 
@@ -30,6 +31,7 @@ let OBJ_FILE_EXTENSION      = "obj"
 
 let TEST_TEXTURE_NAME_1     = "TestTexture1"
 let TEST_TEXTURE_NAME_2     = "TestTexture2"
+let SKYBOX_TEXTURE_NAME_1   = "Skybox1"
 
 let TEST_MATERIAL_NAME_1    = "Mat1"
 let TEST_MATERIAL_NAME_2    = "Mat2"
@@ -74,6 +76,12 @@ public class Renderer: NSObject, MTKViewDelegate
 
         self.defaultMaterial = Material(pipeline: self.defaultPipeline)
         self.skyboxMaterial  = Material(pipeline: self.skyboxPipeline)
+        if let tex = Self.loadTexture(name: SKYBOX_TEXTURE_NAME_1,
+                                      index: SKYBOX_INDEX,
+                                      device: device)
+        {
+            self.skyboxMaterial.textures.append(tex)
+        }
 
         guard let dummy = Self.createMetalTexture(size: MTLSize(width: 1, height: 1, depth: 1),
                                                   initialValue: 128,
