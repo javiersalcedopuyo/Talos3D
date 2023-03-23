@@ -7,21 +7,22 @@ A Metal toy engine written on Swift with the intention of learning Metal and imp
 
 ## Planned "stepping-stone" features
 - [x] Importing of .obj files
-- [ ] Blinn-Phong lighting model
+- [x] Blinn-Phong lighting model
 - [x] FPS camera
 - [x] Forward rendering
 - [x] Simple shadow maps
-- [ ] Skybox
+- [x] Skybox
 
 ## Planned features
-- [ ] Bindless model
-- [ ] Importing of .fbx files
-- [ ] Simple GUI
-- [ ] Physically-Based Rendering
-- [ ] Sample Distribution Shadow Maps
 - [ ] Deferred rendering
+- [ ] Procedural skybox
 - [ ] SSAO
+- [ ] Physically-Based Rendering
+- [ ] Global Illumination
 - [ ] SSR
+- [ ] Bindless model
+- [ ] Simple GUI
+- [ ] Sample Distribution Shadow Maps
 - [ ] Post-processing effects (bloom, depth of field..)
 - [ ] Tile-Based Rendering / iOS version (?)
 - [ ] ???
