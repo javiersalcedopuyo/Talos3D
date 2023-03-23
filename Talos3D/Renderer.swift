@@ -20,6 +20,7 @@ let MATERIAL_PARAMS_INDEX       = BufferIndices.MATERIAL_PARAMS.rawValue
 
 let ALBEDO_MAP_INDEX            = TextureIndices.ALBEDO.rawValue
 let SHADOW_MAP_INDEX            = TextureIndices.SHADOW_MAP.rawValue
+let SKYBOX_INDEX                = TextureIndices.SKYBOX.rawValue
 
 let WORLD_UP = Vector3(x:0, y:1, z:0)
 
@@ -30,6 +31,7 @@ let OBJ_FILE_EXTENSION      = "obj"
 
 let TEST_TEXTURE_NAME_1     = "TestTexture1"
 let TEST_TEXTURE_NAME_2     = "TestTexture2"
+let SKYBOX_TEXTURE_NAME_1   = "Skybox1"
 
 let TEST_MATERIAL_NAME_1    = "Mat1"
 let TEST_MATERIAL_NAME_2    = "Mat2"
@@ -59,20 +61,27 @@ public class Renderer: NSObject, MTKViewDelegate
 
         (self.defaultPipeline,
          self.shadowPipeline,
-         self.mainPipeline) = Self.createPipelines(view: mView)
+         self.mainPipeline,
+         self.skyboxPipeline) = Self.createPipelines(view: mView)
 
         self.shadowMap = Self.createShadowMap(width: 512,
                                               height: 512,
                                               format: .depth16Unorm,
                                               device: device)
 
+        self.depthStencil = Self.createDepthStencilTexture(width:  Int(mtkView.drawableSize.width),
+                                                           height: Int(mtkView.drawableSize.height),
+                                                           format: .depth32Float_stencil8,
+                                                           device: device)
+
         self.defaultMaterial = Material(pipeline: self.defaultPipeline)
-
-        let depthStencilDesc = MTLDepthStencilDescriptor()
-        depthStencilDesc.depthCompareFunction = .less
-        depthStencilDesc.isDepthWriteEnabled  = true
-
-        mDepthStencilState = device.makeDepthStencilState(descriptor: depthStencilDesc)
+        self.skyboxMaterial  = Material(pipeline: self.skyboxPipeline)
+        if let tex = Self.loadTexture(name: SKYBOX_TEXTURE_NAME_1,
+                                      index: SKYBOX_INDEX,
+                                      device: device)
+        {
+            self.skyboxMaterial.textures.append(tex)
+        }
 
         guard let dummy = Self.createMetalTexture(size: MTLSize(width: 1, height: 1, depth: 1),
                                                   initialValue: 128,
@@ -85,6 +94,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
         super.init()
 
+        self.createDepthStencilStates(device: device)
         self.createMaterials(device: device)
         self.buildScene(device: device)
         mView.delegate = self
@@ -217,6 +227,7 @@ public class Renderer: NSObject, MTKViewDelegate
         self.currentCommandBuffer = nil // ARC should take care of deallocating this
     }
 
+    /// Shadow pass. Renders the scene from the light's perspective into the shadow map
     func renderShadowMap()
     {
         let renderPassDesc = MTLRenderPassDescriptor()
@@ -230,7 +241,7 @@ public class Renderer: NSObject, MTKViewDelegate
             return
         }
         commandEncoder.label = "Shadow pass"
-        commandEncoder.setDepthStencilState(mDepthStencilState)
+        commandEncoder.setDepthStencilState(self.shadowDepthStencilState)
         commandEncoder.setDepthBias(1, slopeScale: 3, clamp: 1/128)
 
         self.boundResources.removeAll()
@@ -255,6 +266,7 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder.endEncoding()
     }
 
+    /// Main pass. Renders the scene objects in a forward way.
     func renderScene()
     {
         let view = self.scene.mainCamera.getView()
@@ -266,7 +278,13 @@ public class Renderer: NSObject, MTKViewDelegate
             SimpleLogs.ERROR("No render pass descriptor. Skipping pass.")
             return
         }
-        renderPassDesc.depthAttachment.storeAction = .dontCare
+        renderPassDesc.depthAttachment.texture          = self.depthStencil
+        renderPassDesc.depthAttachment.loadAction       = .clear
+        renderPassDesc.depthAttachment.storeAction      = .dontCare
+
+        renderPassDesc.stencilAttachment.texture        = self.depthStencil
+        renderPassDesc.stencilAttachment.loadAction     = .clear
+        renderPassDesc.stencilAttachment.storeAction    = .dontCare
 
         guard let commandEncoder = self.currentCommandBuffer?
                                        .makeRenderCommandEncoder(descriptor: renderPassDesc) else
@@ -278,7 +296,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
         self.boundResources.removeAll()
 
-        commandEncoder.setDepthStencilState(mDepthStencilState)
+        commandEncoder.setDepthStencilState(self.mainDepthStencilState)
 
         // Set Scene buffers
         commandEncoder.setVertexBytes(view.asPackedArray() + proj.asPackedArray(),
@@ -310,6 +328,16 @@ public class Renderer: NSObject, MTKViewDelegate
                                 passType:   .ForwardLighting)
         }
 
+        if let skybox = self.scene.skybox
+        {
+            commandEncoder.setDepthStencilState(self.skyboxDepthStencilState)
+            commandEncoder.setStencilReferenceValue(0) // We only want to write to the untouched fragments
+
+            encodeRenderCommand(encoder:    commandEncoder,
+                                object:     skybox,
+                                passType:   .ScreenSpace)
+        }
+
         commandEncoder.endEncoding()
     }
 
@@ -325,8 +353,9 @@ public class Renderer: NSObject, MTKViewDelegate
     ///    - Main: Pipeline used by the main render pass
     // TODO: This is slowly getting out of control. Refactor.
     static private func createPipelines(view: MTKView) -> (default: Pipeline,
-                                                           shadow: Pipeline,
-                                                           main: Pipeline)
+                                                           shadow:  Pipeline,
+                                                           main:    Pipeline,
+                                                           skybox:  Pipeline)
     {
         guard let device = view.device else
         {
@@ -344,7 +373,8 @@ public class Renderer: NSObject, MTKViewDelegate
         pipelineDescriptor.vertexFunction                   = library.makeFunction(name: "default_vertex_main")
         pipelineDescriptor.fragmentFunction                 = library.makeFunction(name: "default_fragment_main")
         pipelineDescriptor.vertexDescriptor                 = Model.getNewVertexDescriptor()
-        pipelineDescriptor.depthAttachmentPixelFormat       = view.depthStencilPixelFormat
+        pipelineDescriptor.depthAttachmentPixelFormat       = .depth32Float_stencil8
+        pipelineDescriptor.stencilAttachmentPixelFormat     = .depth32Float_stencil8
 
         guard let defaultPipeline = Pipeline(desc: pipelineDescriptor,
                                              device: device,
@@ -364,11 +394,14 @@ public class Renderer: NSObject, MTKViewDelegate
         }
 
         pipelineDescriptor.label                            = "Shadow Pass PSO"
-        // We don't need a color attachment or a fragment function because we just want the depth
+        // We don't need a color attachment, stencil buffer or fragment function because we just want the depth
         pipelineDescriptor.colorAttachments[0].pixelFormat  = .invalid
+        pipelineDescriptor.stencilAttachmentPixelFormat     = .invalid
         pipelineDescriptor.fragmentFunction                 = nil
         pipelineDescriptor.vertexFunction                   = library.makeFunction(name: "shadow_vertex_main")
         pipelineDescriptor.vertexDescriptor                 = Model.getNewVertexDescriptor()
+        pipelineDescriptor.depthAttachmentPixelFormat       = .depth16Unorm // TODO: Tie this to the shadow map
+        
         guard let shadowPipeline = Pipeline(desc: pipelineDescriptor,
                                             device: device,
                                             type: .Shadows) else
@@ -376,7 +409,24 @@ public class Renderer: NSObject, MTKViewDelegate
             fatalError("Couldn't create shadow pipeline state")
         }
 
-        return (defaultPipeline, shadowPipeline, mainPipeline)
+        let skyboxPipelineDesc = MTLRenderPipelineDescriptor()
+        skyboxPipelineDesc.label                            = "Skybox PSO"
+        skyboxPipelineDesc.colorAttachments[0].pixelFormat  = view.colorPixelFormat
+        skyboxPipelineDesc.vertexFunction                   = library.makeFunction(name: "skybox_vertex_main")
+        skyboxPipelineDesc.fragmentFunction                 = library.makeFunction(name: "skybox_fragment_main")
+        skyboxPipelineDesc.vertexDescriptor                 = MTLVertexDescriptor() // Empty
+        skyboxPipelineDesc.depthAttachmentPixelFormat       = .depth32Float_stencil8
+        skyboxPipelineDesc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
+
+        guard let skyboxPipeline = Pipeline(desc:   skyboxPipelineDesc,
+                                            device: device,
+                                            type:   .ScreenSpace)
+        else
+        {
+            fatalError("Couldn't create the skybox pipeline state")
+        }
+
+        return (defaultPipeline, shadowPipeline, mainPipeline, skyboxPipeline)
     }
 
     /// Creates a new texture to be used as a shadow map
@@ -410,6 +460,87 @@ public class Renderer: NSObject, MTKViewDelegate
         shadowMap.label = "Shadow Map"
 
         return shadowMap
+    }
+
+    /// Creates a new texture to be used as a depth/stencil buffer
+    /// - Parameters:
+    ///     - width
+    ///     - height
+    ///     - format: Must be a depth/stencil format
+    ///     - device: The MTLDevice that will create the texture
+    /// - Returns:
+    ///     - depthStencil
+    static private func createDepthStencilTexture(width:  Int,
+                                                  height: Int,
+                                                  format: MTLPixelFormat,
+                                                  device: MTLDevice)
+    -> MTLTexture
+    {
+        assert(format == .depth16Unorm || format == .depth32Float ||
+               format == .stencil8 ||
+               format == .depth24Unorm_stencil8 || format == .depth32Float_stencil8)
+
+        let desc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: format,
+                                                            width:       width,
+                                                            height:      height,
+                                                            mipmapped:   false)
+        desc.storageMode = .private
+        desc.usage       = .renderTarget
+        desc.sampleCount = 1
+
+        guard let ds = device.makeTexture(descriptor: desc) else
+        {
+            // TODO: Handle this gracefully
+            fatalError("Couldn't create the depth/stencil")
+        }
+        return ds
+    }
+
+    /// Creates the internal depth/stencil states
+    /// - Parameters:
+    ///     - device: The MTLDevice used to create the states
+    private func createDepthStencilStates(device: MTLDevice)
+    {
+        // Shadow
+        let depthStencilDesc = MTLDepthStencilDescriptor()
+        depthStencilDesc.depthCompareFunction = .less
+        depthStencilDesc.isDepthWriteEnabled  = true
+
+        guard let sds = device.makeDepthStencilState(descriptor: depthStencilDesc) else
+        {
+            fatalError("Couldn't create the shadow depth/stencil state")
+        }
+        self.shadowDepthStencilState = sds
+
+        // Main
+        let stencilDesc = MTLStencilDescriptor()
+        stencilDesc.depthStencilPassOperation   = .incrementClamp
+        stencilDesc.stencilCompareFunction      = .always // The main pass always writes to the stencil
+
+        depthStencilDesc.frontFaceStencil = stencilDesc
+        depthStencilDesc.backFaceStencil  = stencilDesc
+        guard let mds = device.makeDepthStencilState(descriptor: depthStencilDesc) else
+        {
+            fatalError("Couldn't create the shadow depth/stencil state")
+        }
+        self.mainDepthStencilState = mds
+
+        // Skybox
+        stencilDesc.stencilCompareFunction = .equal // Only write to the untouched fragments
+
+        let skyboxDSDesc = MTLDepthStencilDescriptor()
+        skyboxDSDesc.frontFaceStencil       = stencilDesc
+        // The screen-space quad will be in front of the camera so we have to ignore the depth
+        skyboxDSDesc.isDepthWriteEnabled    = false
+        skyboxDSDesc.depthCompareFunction   = .always
+        if let ds = device.makeDepthStencilState(descriptor: skyboxDSDesc)
+        {
+            self.skyboxDepthStencilState = ds
+        }
+        else
+        {
+            fatalError("Couldn't create the screen space depth/stencil state")
+        }
     }
 
     private func createMaterials(device: MTLDevice)
@@ -527,6 +658,24 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             SimpleLogs.ERROR("Couldn't load model '" + QUAD_MODEL_NAME + "." + OBJ_FILE_EXTENSION + "'")
         }
+
+        // TODO: Replace with a triangle
+        // SCREEN QUAD
+        if let modelURL = Bundle.main.url(forResource: QUAD_MODEL_NAME,
+                                          withExtension: OBJ_FILE_EXTENSION)
+        {
+            let model = Model(device: device,
+                              url: modelURL,
+                              material: self.skyboxMaterial, // TODO: Skybox material
+                              label: "Screen Space Skybox",
+                              culling: .back)
+
+            self.scene.set(skybox: model)
+        }
+        else
+        {
+            SimpleLogs.ERROR("Couldn't load model '" + QUAD_MODEL_NAME + "." + OBJ_FILE_EXTENSION + "'")
+        }
     }
 
     static private func loadTexture(name: String, index: Int, device: MTLDevice) -> Texture?
@@ -583,12 +732,17 @@ public class Renderer: NSObject, MTKViewDelegate
         case .ForwardLighting:
             objMatrixData.append(contentsOf: object.getNormalMatrix().asPackedArray() )
 
+            encoder.setVertexBytes(objMatrixData,
+                                   length: MemoryLayout<Float>.size * objMatrixData.count,
+                                   index: OBJECT_MATRICES_INDEX)
+
             encoder.setFragmentBytes(objMatrixData,
                                      length: MemoryLayout<Float>.size * objMatrixData.count,
                                      index: OBJECT_MATRICES_INDEX)
 
             // TODO: Sort the models by material
             let material = object.getMaterial()
+            assert(material.pipeline.type == .ForwardLighting)
             self.bind(pipeline: material.pipeline, inEncoder: encoder)
 
             encoder.setFrontFacing(object.getWinding())
@@ -615,15 +769,41 @@ public class Renderer: NSObject, MTKViewDelegate
             }
 
         case .Shadows:
-            break // The shadow passes don't have a fragment stage and don't need materials
+            // The shadow passes don't have a fragment stage and don't need materials
+            encoder.setVertexBytes(objMatrixData,
+                                   length: MemoryLayout<Float>.size * objMatrixData.count,
+                                   index: OBJECT_MATRICES_INDEX)
+            break
+
+        case .ScreenSpace:
+            // A screen space pass won't need the object's matrices because the transformed position
+            // is fixed.
+            // It won't need the material parameters either because doesn't have a "real" material.
+            let material = object.getMaterial()
+            assert(material.pipeline.type == .ScreenSpace)
+            self.bind(pipeline: material.pipeline, inEncoder: encoder)
+
+            // Set Textures
+            for texture in material.textures
+            {
+                if let idx = texture.getIndexAtStage(.Vertex)
+                {
+                    self.bind(texture: texture.getResource() as! MTLTexture,
+                              at: BindingPoint(index: idx, stage: .Vertex),
+                              inEncoder: encoder)
+                }
+                if let idx = texture.getIndexAtStage(.Fragment)
+                {
+                    self.bind(texture: texture.getResource() as! MTLTexture,
+                              at: BindingPoint(index: idx, stage: .Fragment),
+                              inEncoder: encoder)
+                }
+            }
+            break
 
         case .GBuffer, .DeferredComposite:
             UNIMPLEMENTED("Deferred rendering is not supported yet.") // TODO: Deferred Rendering
         }
-
-        encoder.setVertexBytes(objMatrixData,
-                               length: MemoryLayout<Float>.size * objMatrixData.count,
-                               index: OBJECT_MATRICES_INDEX)
 
         // Draw
         for submesh in object.getMesh().submeshes
@@ -722,16 +902,21 @@ public class Renderer: NSObject, MTKViewDelegate
     private let mainPipeline: Pipeline
     private let defaultPipeline: Pipeline
     private let shadowPipeline: Pipeline
+    private let skyboxPipeline: Pipeline
     private var currentlyBoundPipelineID: ObjectIdentifier? = nil // TODO: Per encoder
 
-    private var mDepthStencilState: MTLDepthStencilState?
+    private var mainDepthStencilState:      MTLDepthStencilState!
+    private var shadowDepthStencilState:    MTLDepthStencilState!
+    private var skyboxDepthStencilState:    MTLDepthStencilState!
 
-    private var shadowMap: MTLTexture
+    private var shadowMap:    MTLTexture
+    private var depthStencil: MTLTexture
     private let dummyTexture: MTLTexture
 
     private var scene: Scene!
 
     private let defaultMaterial: Material
+    private let skyboxMaterial: Material
     private var materials: [String: Material] = [:]
 
     private var boundResources: [BindingPoint: ObjectIdentifier] = [:] // TODO: Per encoder?

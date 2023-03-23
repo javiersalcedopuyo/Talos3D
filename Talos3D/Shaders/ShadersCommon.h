@@ -46,6 +46,7 @@ typedef NS_ENUM(NSInteger, TextureIndices)
 {
     ALBEDO = 0,
     SHADOW_MAP,
+    SKYBOX,
 
     TEXTURE_COUNT
 };
