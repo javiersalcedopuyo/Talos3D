@@ -47,7 +47,9 @@ VertexOut skybox_vertex_main(uint id [[vertex_id]],
     // NOTE: Transposing them on the CPU would save time in the GPU, but it's only 4 vertices (3 in
     // the future, so the cost of rebinding the transposed matrices is probably higher than doing it
     // in the shader.
-    out.view_dir_in_world_space = transpose(scene.view) * transpose(scene.proj) * normalize(out.position);
+    out.view_dir_in_world_space = transpose(scene.view) *
+                                  transpose(scene.proj) *
+                                  float4(out.position.xy, 1, 1);
     return out;
 }
 
@@ -60,7 +62,7 @@ float4 skybox_fragment_main(VertexOut frag [[ stage_in ]],
                           s_address::clamp_to_edge,
                           t_address::clamp_to_edge);
 
-    return sqrt(skybox.sample(smp, normalize(frag.view_dir_in_world_space.xyz)));
+    return sqrt(skybox.sample(smp, frag.view_dir_in_world_space.xyz));
 }
 
 
