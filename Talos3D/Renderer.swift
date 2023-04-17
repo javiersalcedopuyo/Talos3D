@@ -59,11 +59,6 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         commandQueue = cq
 
-        (self.defaultPipeline,
-         self.shadowPipeline,
-         self.mainPipeline,
-         self.skyboxPipeline) = Self.createPipelines(view: mView)
-
         self.shadowMap = Self.createShadowMap(width: 512,
                                               height: 512,
                                               format: .depth16Unorm,
@@ -74,8 +69,10 @@ public class Renderer: NSObject, MTKViewDelegate
                                                            format: .depth32Float_stencil8,
                                                            device: device)
 
-        self.defaultMaterial = Material(pipeline: self.defaultPipeline)
-        self.skyboxMaterial  = Material(pipeline: self.skyboxPipeline)
+        self.pipelineManager = PipelineManager(view: mView)
+
+        self.defaultMaterial = Material(pipeline: self.pipelineManager.getOrCreateDefaultPipeline())
+        self.skyboxMaterial  = Material(pipeline: self.pipelineManager.getOrCreateSkyboxPipeline())
         if let tex = Self.loadTexture(name: SKYBOX_TEXTURE_NAME_1,
                                       index: SKYBOX_INDEX,
                                       device: device)
@@ -255,7 +252,8 @@ public class Renderer: NSObject, MTKViewDelegate
                                       index: SCENE_MATRICES_INDEX)
 
         // All objects in the shadow pass use the same PSO
-        self.bind(pipeline: self.shadowPipeline, inEncoder: commandEncoder)
+        self.bind(pipeline: self.pipelineManager.getOrCreateShadowPipeline(),
+                  inEncoder: commandEncoder)
 
         for model in self.scene.objects
         {
@@ -344,91 +342,6 @@ public class Renderer: NSObject, MTKViewDelegate
     public var mView: MTKView
 
     // MARK: - Private
-    /// Creates the pipelines needed by the engine.
-    /// - Parameters:
-    ///     - view: the current MTKView
-    /// - Returns:
-    ///    - Default: Pipeline used by the default material (aka the material-missing pink material)
-    ///    - Shadow: Pipeline used to render the shadow map
-    ///    - Main: Pipeline used by the main render pass
-    // TODO: This is slowly getting out of control. Refactor.
-    static private func createPipelines(view: MTKView) -> (default: Pipeline,
-                                                           shadow:  Pipeline,
-                                                           main:    Pipeline,
-                                                           skybox:  Pipeline)
-    {
-        guard let device = view.device else
-        {
-            fatalError("No device")
-        }
-
-        guard let library = view.device?.makeDefaultLibrary() else
-        {
-            fatalError("Couldn't create shader library!")
-        }
-
-        let pipelineDescriptor = MTLRenderPipelineDescriptor()
-        pipelineDescriptor.label                            = "Default PSO"
-        pipelineDescriptor.colorAttachments[0].pixelFormat  = view.colorPixelFormat
-        pipelineDescriptor.vertexFunction                   = library.makeFunction(name: "default_vertex_main")
-        pipelineDescriptor.fragmentFunction                 = library.makeFunction(name: "default_fragment_main")
-        pipelineDescriptor.vertexDescriptor                 = Model.getNewVertexDescriptor()
-        pipelineDescriptor.depthAttachmentPixelFormat       = .depth32Float_stencil8
-        pipelineDescriptor.stencilAttachmentPixelFormat     = .depth32Float_stencil8
-
-        guard let defaultPipeline = Pipeline(desc: pipelineDescriptor,
-                                             device: device,
-                                             type: .ForwardLighting) else
-        {
-            fatalError("Couldn't create default pipeline state")
-        }
-
-        pipelineDescriptor.label            = "Main PSO"
-        pipelineDescriptor.vertexFunction   = library.makeFunction(name: "vertex_main")
-        pipelineDescriptor.fragmentFunction = library.makeFunction(name: "fragment_main")
-        guard let mainPipeline = Pipeline(desc: pipelineDescriptor,
-                                          device: device,
-                                          type: .ForwardLighting) else
-        {
-            fatalError("Couldn't create main pipeline state")
-        }
-
-        pipelineDescriptor.label                            = "Shadow Pass PSO"
-        // We don't need a color attachment, stencil buffer or fragment function because we just want the depth
-        pipelineDescriptor.colorAttachments[0].pixelFormat  = .invalid
-        pipelineDescriptor.stencilAttachmentPixelFormat     = .invalid
-        pipelineDescriptor.fragmentFunction                 = nil
-        pipelineDescriptor.vertexFunction                   = library.makeFunction(name: "shadow_vertex_main")
-        pipelineDescriptor.vertexDescriptor                 = Model.getNewVertexDescriptor()
-        pipelineDescriptor.depthAttachmentPixelFormat       = .depth16Unorm // TODO: Tie this to the shadow map
-        
-        guard let shadowPipeline = Pipeline(desc: pipelineDescriptor,
-                                            device: device,
-                                            type: .Shadows) else
-        {
-            fatalError("Couldn't create shadow pipeline state")
-        }
-
-        let skyboxPipelineDesc = MTLRenderPipelineDescriptor()
-        skyboxPipelineDesc.label                            = "Skybox PSO"
-        skyboxPipelineDesc.colorAttachments[0].pixelFormat  = view.colorPixelFormat
-        skyboxPipelineDesc.vertexFunction                   = library.makeFunction(name: "skybox_vertex_main")
-        skyboxPipelineDesc.fragmentFunction                 = library.makeFunction(name: "skybox_fragment_main")
-        skyboxPipelineDesc.vertexDescriptor                 = MTLVertexDescriptor() // Empty
-        skyboxPipelineDesc.depthAttachmentPixelFormat       = .depth32Float_stencil8
-        skyboxPipelineDesc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
-
-        guard let skyboxPipeline = Pipeline(desc:   skyboxPipelineDesc,
-                                            device: device,
-                                            type:   .ScreenSpace)
-        else
-        {
-            fatalError("Couldn't create the skybox pipeline state")
-        }
-
-        return (defaultPipeline, shadowPipeline, mainPipeline, skyboxPipeline)
-    }
-
     /// Creates a new texture to be used as a shadow map
     /// - Parameters:
     ///     - width
@@ -545,7 +458,8 @@ public class Renderer: NSObject, MTKViewDelegate
 
     private func createMaterials(device: MTLDevice)
     {
-        let material1 = Material(pipeline: self.mainPipeline, label: TEST_MATERIAL_NAME_1)
+        let mainPipeline = self.pipelineManager.getOrCreateMainPipeline()
+        let material1 = Material(pipeline: mainPipeline, label: TEST_MATERIAL_NAME_1)
         if let tex = Self.loadTexture(name: TEST_TEXTURE_NAME_1,
                                       index: ALBEDO_MAP_INDEX,
                                       device: device)
@@ -899,10 +813,7 @@ public class Renderer: NSObject, MTKViewDelegate
     private var currentCommandBuffer: MTLCommandBuffer?
 
     // TODO: pipeline cache
-    private let mainPipeline: Pipeline
-    private let defaultPipeline: Pipeline
-    private let shadowPipeline: Pipeline
-    private let skyboxPipeline: Pipeline
+    private let pipelineManager: PipelineManager
     private var currentlyBoundPipelineID: ObjectIdentifier? = nil // TODO: Per encoder
 
     private var mainDepthStencilState:      MTLDepthStencilState!

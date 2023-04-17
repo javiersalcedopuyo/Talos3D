@@ -16,6 +16,7 @@
 		85405CD528B13B7600272372 /* Material.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85405CD428B13B7600272372 /* Material.swift */; };
 		85405CD728B1648000272372 /* ShaderResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85405CD628B1648000272372 /* ShaderResource.swift */; };
 		85405CD928B1671A00272372 /* Buffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85405CD828B1671A00272372 /* Buffer.swift */; };
+		8544819D29EDE12D009A2105 /* PipelineManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8544819C29EDE12D009A2105 /* PipelineManager.swift */; };
 		8548252828C6073E00514ED0 /* CameraTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8548252728C6073E00514ED0 /* CameraTests.swift */; };
 		854D844728C512FA00B70916 /* teapot.obj in Resources */ = {isa = PBXBuildFile; fileRef = 854D844628C512FA00B70916 /* teapot.obj */; };
 		8556209F28C69A7500BF9475 /* TransformTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8556209E28C69A7500BF9475 /* TransformTests.swift */; };
@@ -59,6 +60,7 @@
 		85405CD428B13B7600272372 /* Material.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Material.swift; sourceTree = "<group>"; };
 		85405CD628B1648000272372 /* ShaderResource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShaderResource.swift; sourceTree = "<group>"; };
 		85405CD828B1671A00272372 /* Buffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Buffer.swift; sourceTree = "<group>"; };
+		8544819C29EDE12D009A2105 /* PipelineManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineManager.swift; sourceTree = "<group>"; };
 		8548251E28C6071600514ED0 /* Talos3DTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Talos3DTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8548252728C6073E00514ED0 /* CameraTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTests.swift; sourceTree = "<group>"; };
 		854D844628C512FA00B70916 /* teapot.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = teapot.obj; sourceTree = "<group>"; };
@@ -149,6 +151,7 @@
 				85405CDA28B167E900272372 /* Wrappers */,
 				859CEA26277DE361001D07B7 /* AppDelegate.swift */,
 				859CEA28277DE361001D07B7 /* GameViewController.swift */,
+				8544819C29EDE12D009A2105 /* PipelineManager.swift */,
 				859CEA2A277DE361001D07B7 /* Renderer.swift */,
 				853291D5278370CE00DE4B93 /* Camera.swift */,
 				85308EA728BD0AA2002D510F /* Scene.swift */,
@@ -318,6 +321,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				85405CD328B1384300272372 /* Texture.swift in Sources */,
+				8544819D29EDE12D009A2105 /* PipelineManager.swift in Sources */,
 				859CEA49277E4763001D07B7 /* Model.swift in Sources */,
 				85405CD928B1671A00272372 /* Buffer.swift in Sources */,
 				859CEA45277E45A9001D07B7 /* MainShaders.metal in Sources */,
