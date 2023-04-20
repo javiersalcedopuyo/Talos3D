@@ -7,6 +7,8 @@
 
 #include <metal_stdlib>
 #include "ShadersCommon.h"
+#include "ShaderUtils.h"
+
 using namespace metal;
 
 struct SceneMatrices
@@ -44,12 +46,12 @@ VertexOut skybox_vertex_main(uint id [[vertex_id]],
             break;
     }
 
-    // NOTE: Transposing them on the CPU would save time in the GPU, but it's only 4 vertices (3 in
-    // the future, so the cost of rebinding the transposed matrices is probably higher than doing it
-    // in the shader.
+    // NOTE: Iverting them on the CPU would save time in the GPU, but it's only 4 vertices (3 in
+    // the future, so the cost of rebinding the inverse matrices is probably higher than doing it
+    // in the shader. However, inverting the projection is expensive, so it should be profiled.
     out.view_dir_in_world_space = transpose(scene.view) *
-                                  transpose(scene.proj) *
-                                  float4(out.position.xy, 1, 1);
+                                  inverse(scene.proj) *
+                                  out.position;
     return out;
 }
 
