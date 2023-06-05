@@ -18,6 +18,7 @@ struct ObjectMatrices
     float4x4 normal;
 };
 
+// MARK: - Vertex
 struct VertexIn
 {
     float3 position [[ attribute(POSITION) ]];
@@ -36,7 +37,6 @@ struct VertexOut
     float2 texcoord;
 };
 
-// MARK: - Main functions
 vertex
 VertexOut vertex_main(VertexIn                  vert            [[ stage_in ]],
                       constant SceneMatrices&   scene           [[ buffer(SCENE_MATRICES) ]],
@@ -54,6 +54,7 @@ VertexOut vertex_main(VertexIn                  vert            [[ stage_in ]],
     return out;
 }
 
+// MARK: - Fragment
 struct DirectionalLight
 {
     float3 direction;
@@ -69,15 +70,25 @@ struct MaterialParams
     packed_float3 padding; // Do I need this?
 };
 
-fragment
-float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
-                     texture2d<float>           tex         [[ texture(ALBEDO) ]],
-                     texture2d<float>           shadowMap   [[ texture(SHADOW_MAP) ]],
-                     constant SceneMatrices&    scene       [[ buffer(SCENE_MATRICES) ]],
-                     constant DirectionalLight& light       [[ buffer(LIGHTS) ]],
-                     constant float4x4&         lightMatrix [[ buffer(LIGHT_MATRIX) ]],
-                     constant MaterialParams&   material    [[ buffer(MATERIAL_PARAMS) ]])
+struct FragmentOut
 {
+    float4 albedo [[ color(0) ]];
+    float4 normal [[ color(1) ]];
+    float4 roughnessAndMetallic [[ color(2) ]];
+};
+
+
+fragment
+FragmentOut fragment_main(VertexOut                  frag        [[ stage_in ]],
+                          texture2d<float>           tex         [[ texture(ALBEDO) ]],
+                          texture2d<float>           shadowMap   [[ texture(SHADOW_MAP) ]],
+                          constant SceneMatrices&    scene       [[ buffer(SCENE_MATRICES) ]],
+                          constant DirectionalLight& light       [[ buffer(LIGHTS) ]],
+                          constant float4x4&         lightMatrix [[ buffer(LIGHT_MATRIX) ]],
+                          constant MaterialParams&   material    [[ buffer(MATERIAL_PARAMS) ]])
+{
+    FragmentOut output;
+
     constexpr sampler smp(min_filter::nearest,
                           mag_filter::linear,
                           s_address::mirrored_repeat,
@@ -93,6 +104,16 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
 
     albedo.rgb *= material.tint;
 
+    output.albedo = albedo;
+
+    output.normal.rgb = (normalInViewSpace + 1.f) * 0.5f;
+    output.normal.a = 0.f;
+
+    output.roughnessAndMetallic.r = material.roughness;
+    output.roughnessAndMetallic.g = material.metallic;
+    output.roughnessAndMetallic.ba = 0.f;
+
+    // TODO: Don't perform *any* lighting in this shader
     auto lambertian = saturate(dot(normalInViewSpace, lightDirInViewSpace.xyz));
 
     auto ambient  = float4(0.2f) * albedo; // TODO: Make the ambient coefficient a Scene property
@@ -111,10 +132,10 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
                     : ComputeShadow(frag.positionInLightSpace, shadowMap);
 
     auto o = light.color * (diffuse + specular) * (1 - shadow) + ambient;
-    // Debug normals
-//    o.xyz = (normalInViewSpace + 1.f) * 0.5f;
 
     o.a = 1.f;
     //return sqrt(o);
-    return o;
+    output.albedo = o;
+
+    return output;
 }

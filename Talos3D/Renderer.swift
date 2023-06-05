@@ -89,6 +89,18 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         self.dummyTexture = dummy
 
+        // TODO: createGBuffer()
+        let gBufferDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm,
+                                                                   width:  Int(mtkView.drawableSize.width),
+                                                                   height: Int(mtkView.drawableSize.height),
+                                                                   mipmapped: false)
+        gBufferDesc.usage = .renderTarget
+        self.gBufferNormal = device.makeTexture(descriptor: gBufferDesc)!
+        self.gBufferNormal.label = "G-Buffer Normal"
+
+        self.gBufferRoughnessAndMetallic = device.makeTexture(descriptor: gBufferDesc)!
+        self.gBufferRoughnessAndMetallic.label = "G-Buffer Roughness & Metallic"
+
         super.init()
 
         self.createDepthStencilStates(device: device)
@@ -276,6 +288,14 @@ public class Renderer: NSObject, MTKViewDelegate
             SimpleLogs.ERROR("No render pass descriptor. Skipping pass.")
             return
         }
+        renderPassDesc.colorAttachments[1].texture      = self.gBufferNormal
+        renderPassDesc.colorAttachments[1].loadAction   = .dontCare
+        renderPassDesc.colorAttachments[1].storeAction  = .store
+
+        renderPassDesc.colorAttachments[2].texture      = self.gBufferRoughnessAndMetallic
+        renderPassDesc.colorAttachments[2].loadAction   = .dontCare
+        renderPassDesc.colorAttachments[2].storeAction  = .store
+
         renderPassDesc.depthAttachment.texture          = self.depthStencil
         renderPassDesc.depthAttachment.loadAction       = .clear
         renderPassDesc.depthAttachment.storeAction      = .dontCare
@@ -823,6 +843,10 @@ public class Renderer: NSObject, MTKViewDelegate
     private var shadowMap:    MTLTexture
     private var depthStencil: MTLTexture
     private let dummyTexture: MTLTexture
+
+    // G-Buffer
+    private let gBufferNormal: MTLTexture
+    private let gBufferRoughnessAndMetallic: MTLTexture
 
     private var scene: Scene!
 
