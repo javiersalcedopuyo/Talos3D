@@ -70,25 +70,16 @@ struct MaterialParams
     packed_float3 padding; // Do I need this?
 };
 
-struct FragmentOut
-{
-    float4 albedo [[ color(0) ]];
-    float4 normal [[ color(1) ]];
-    float4 roughnessAndMetallic [[ color(2) ]];
-};
-
 
 fragment
-FragmentOut fragment_main(VertexOut                  frag        [[ stage_in ]],
-                          texture2d<float>           tex         [[ texture(ALBEDO) ]],
-                          texture2d<float>           shadowMap   [[ texture(SHADOW_MAP) ]],
-                          constant SceneMatrices&    scene       [[ buffer(SCENE_MATRICES) ]],
-                          constant DirectionalLight& light       [[ buffer(LIGHTS) ]],
-                          constant float4x4&         lightMatrix [[ buffer(LIGHT_MATRIX) ]],
-                          constant MaterialParams&   material    [[ buffer(MATERIAL_PARAMS) ]])
+float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
+                     texture2d<float>           tex         [[ texture(ALBEDO) ]],
+                     texture2d<float>           shadowMap   [[ texture(SHADOW_MAP) ]],
+                     constant SceneMatrices&    scene       [[ buffer(SCENE_MATRICES) ]],
+                     constant DirectionalLight& light       [[ buffer(LIGHTS) ]],
+                     constant float4x4&         lightMatrix [[ buffer(LIGHT_MATRIX) ]],
+                     constant MaterialParams&   material    [[ buffer(MATERIAL_PARAMS) ]])
 {
-    FragmentOut output;
-
     constexpr sampler smp(min_filter::nearest,
                           mag_filter::linear,
                           s_address::mirrored_repeat,
@@ -104,16 +95,6 @@ FragmentOut fragment_main(VertexOut                  frag        [[ stage_in ]],
 
     albedo.rgb *= material.tint;
 
-    output.albedo = albedo;
-
-    output.normal.rgb = (normalInViewSpace + 1.f) * 0.5f;
-    output.normal.a = 0.f;
-
-    output.roughnessAndMetallic.r = material.roughness;
-    output.roughnessAndMetallic.g = material.metallic;
-    output.roughnessAndMetallic.ba = 0.f;
-
-    // TODO: Don't perform *any* lighting in this shader
     auto lambertian = saturate(dot(normalInViewSpace, lightDirInViewSpace.xyz));
 
     auto ambient  = float4(0.2f) * albedo; // TODO: Make the ambient coefficient a Scene property
@@ -135,7 +116,5 @@ FragmentOut fragment_main(VertexOut                  frag        [[ stage_in ]],
 
     o.a = 1.f;
     //return sqrt(o);
-    output.albedo = o;
-
-    return output;
+    return o;
 }

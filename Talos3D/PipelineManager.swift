@@ -72,8 +72,6 @@ class PipelineManager
         desc.fragmentFunction                 = self.shaderLibrary.makeFunction(name: "fragment_main")
         desc.vertexDescriptor                 = Model.getNewVertexDescriptor()
         desc.colorAttachments[0].pixelFormat  = self.colorFormat
-        desc.colorAttachments[1].pixelFormat  = .bgra8Unorm
-        desc.colorAttachments[2].pixelFormat  = .bgra8Unorm
         desc.depthAttachmentPixelFormat       = .depth32Float_stencil8
         desc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
 
@@ -130,8 +128,6 @@ class PipelineManager
         desc.fragmentFunction                 = self.shaderLibrary.makeFunction(name: "skybox_fragment_main")
         desc.vertexDescriptor                 = MTLVertexDescriptor() // Empty
         desc.colorAttachments[0].pixelFormat  = self.colorFormat
-        desc.colorAttachments[1].pixelFormat  = .bgra8Unorm
-        desc.colorAttachments[2].pixelFormat  = .bgra8Unorm
         desc.depthAttachmentPixelFormat       = .depth32Float_stencil8
         desc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
 
@@ -147,6 +143,36 @@ class PipelineManager
         return pipeline
     }
 
+    /// Lazily gets the G Buffer pipeline
+    public func getOrCreateGBufferPipeline() -> Pipeline
+    {
+        if let pipeline = self.gBufferPipeline
+        {
+            return pipeline
+        }
+
+        let desc = MTLRenderPipelineDescriptor()
+        desc.label                            = "G-Buffer PSO"
+        desc.vertexFunction                   = self.shaderLibrary.makeFunction(name: "g_buffer_vertex_main")
+        desc.fragmentFunction                 = self.shaderLibrary.makeFunction(name: "g_buffer_fragment_main")
+        desc.vertexDescriptor                 = Model.getNewVertexDescriptor()
+        desc.colorAttachments[0].pixelFormat  = .bgra8Unorm // Albedo & metallic
+        desc.colorAttachments[1].pixelFormat  = .bgra8Unorm // Normal & roughness
+        desc.depthAttachmentPixelFormat       = .depth32Float_stencil8
+        desc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
+
+        guard let pipeline = Pipeline(desc:   desc,
+                                      device: device,
+                                      type:   .GBuffer)
+        else
+        {
+            fatalError("☠️ Couldn't create the G-Buffer pipeline state")
+        }
+
+        self.gBufferPipeline = pipeline
+        return pipeline
+    }
+
     // - MARK: Private
     private let shaderLibrary:      MTLLibrary
     private let device:             MTLDevice
@@ -156,4 +182,5 @@ class PipelineManager
     private var defaultPipeline:    Pipeline? = nil
     private var shadowPipeline:     Pipeline? = nil
     private var skyboxPipeline:     Pipeline? = nil
+    private var gBufferPipeline:    Pipeline? = nil
 }

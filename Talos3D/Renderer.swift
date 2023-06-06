@@ -95,11 +95,11 @@ public class Renderer: NSObject, MTKViewDelegate
                                                                    height: Int(mtkView.drawableSize.height),
                                                                    mipmapped: false)
         gBufferDesc.usage = .renderTarget
-        self.gBufferNormal = device.makeTexture(descriptor: gBufferDesc)!
-        self.gBufferNormal.label = "G-Buffer Normal"
+        self.gBufferAlbedoAndMetallic = device.makeTexture(descriptor: gBufferDesc)!
+        self.gBufferAlbedoAndMetallic.label = "G-Buffer Albedo & Metallic"
 
-        self.gBufferRoughnessAndMetallic = device.makeTexture(descriptor: gBufferDesc)!
-        self.gBufferRoughnessAndMetallic.label = "G-Buffer Roughness & Metallic"
+        self.gBufferNormalAndRoughness = device.makeTexture(descriptor: gBufferDesc)!
+        self.gBufferNormalAndRoughness.label = "G-Buffer Normal & Roughness"
 
         super.init()
 
@@ -206,6 +206,7 @@ public class Renderer: NSObject, MTKViewDelegate
         self.beginFrame()
 
         self.renderShadowMap()
+//        self.renderGBuffer()
         self.renderScene()
 
         self.endFrame()
@@ -276,6 +277,62 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder.endEncoding()
     }
 
+    func renderGBuffer()
+    {
+        if self.scene.objects.isEmpty
+        {
+            SimpleLogs.WARNING("Empty scene. Skipping pass. Is this intentional?")
+            return
+        }
+
+        let view = self.scene.mainCamera.getView()
+        let proj = self.scene.mainCamera.getProjection()
+
+        let renderPassDesc = MTLRenderPassDescriptor()
+        // Albedo & metallic
+        renderPassDesc.colorAttachments[0].texture     = self.gBufferAlbedoAndMetallic
+        renderPassDesc.colorAttachments[0].loadAction  = .dontCare
+        renderPassDesc.colorAttachments[0].storeAction = .store
+        // Normal & roughness
+        renderPassDesc.colorAttachments[1].texture     = self.gBufferNormalAndRoughness
+        renderPassDesc.colorAttachments[1].loadAction  = .dontCare
+        renderPassDesc.colorAttachments[1].storeAction = .store
+        // Depth buffer
+        renderPassDesc.depthAttachment.texture          = self.depthStencil
+        renderPassDesc.depthAttachment.loadAction       = .clear
+        renderPassDesc.depthAttachment.storeAction      = .store
+        // Stencil buffer
+        renderPassDesc.stencilAttachment.texture        = self.depthStencil
+        renderPassDesc.stencilAttachment.loadAction     = .clear
+        renderPassDesc.stencilAttachment.storeAction    = .store
+
+        guard let commandEncoder = self.currentCommandBuffer?
+                                       .makeRenderCommandEncoder(descriptor: renderPassDesc) else
+        {
+            SimpleLogs.ERROR("Couldn't creater a command encoder. Skipping pass.")
+            return
+        }
+        commandEncoder.label = "G-Buffer pass"
+
+        self.boundResources.removeAll()
+
+        commandEncoder.setDepthStencilState(self.mainDepthStencilState)
+        
+        // Set Scene buffers
+        commandEncoder.setVertexBytes(view.asPackedArray() + proj.asPackedArray(),
+                                      length: Matrix4x4.size() * 2,
+                                      index: SCENE_MATRICES_INDEX)
+
+        for model in self.scene.objects
+        {
+            encodeRenderCommand(encoder:    commandEncoder,
+                                object:     model,
+                                passType:   .GBuffer)
+        }
+
+        commandEncoder.endEncoding()
+    }
+
     /// Main pass. Renders the scene objects in a forward way.
     func renderScene()
     {
@@ -288,14 +345,6 @@ public class Renderer: NSObject, MTKViewDelegate
             SimpleLogs.ERROR("No render pass descriptor. Skipping pass.")
             return
         }
-        renderPassDesc.colorAttachments[1].texture      = self.gBufferNormal
-        renderPassDesc.colorAttachments[1].loadAction   = .dontCare
-        renderPassDesc.colorAttachments[1].storeAction  = .store
-
-        renderPassDesc.colorAttachments[2].texture      = self.gBufferRoughnessAndMetallic
-        renderPassDesc.colorAttachments[2].loadAction   = .dontCare
-        renderPassDesc.colorAttachments[2].storeAction  = .store
-
         renderPassDesc.depthAttachment.texture          = self.depthStencil
         renderPassDesc.depthAttachment.loadAction       = .clear
         renderPassDesc.depthAttachment.storeAction      = .dontCare
@@ -478,6 +527,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
     private func createMaterials(device: MTLDevice)
     {
+//        let mainPipeline = self.pipelineManager.getOrCreateGBufferPipeline()
         let mainPipeline = self.pipelineManager.getOrCreateMainPipeline()
         let material1 = Material(pipeline: mainPipeline, label: TEST_MATERIAL_NAME_1)
         if let tex = Self.loadTexture(name: TEST_TEXTURE_NAME_1,
@@ -735,8 +785,37 @@ public class Renderer: NSObject, MTKViewDelegate
             }
             break
 
-        case .GBuffer, .DeferredComposite:
-            UNIMPLEMENTED("Deferred rendering is not supported yet.") // TODO: Deferred Rendering
+        case .GBuffer:
+            objMatrixData.append(contentsOf: object.getNormalMatrix().asPackedArray() )
+
+            encoder.setVertexBytes(objMatrixData,
+                                   length: MemoryLayout<Float>.size * objMatrixData.count,
+                                   index: OBJECT_MATRICES_INDEX)
+
+            // TODO: Sort the models by material
+            let material = object.getMaterial()
+            assert(material.pipeline.type == .GBuffer)
+            self.bind(pipeline: material.pipeline, inEncoder: encoder)
+
+            encoder.setFrontFacing(object.getWinding())
+
+            encoder.setFragmentBytes(material.params.getPackedData(),
+                                     length: MaterialParams.packedSize,
+                                     index: MATERIAL_PARAMS_INDEX)
+
+            // Set Textures
+            for texture in material.textures
+            {
+                if let idx = texture.getIndexAtStage(.Fragment)
+                {
+                    self.bind(texture: texture.getResource() as! MTLTexture,
+                              at: BindingPoint(index: idx, stage: .Fragment),
+                              inEncoder: encoder)
+                }
+            }
+
+        case .DeferredComposite:
+            UNIMPLEMENTED("Deferred composite pass is not supported yet")
         }
 
         // Draw
@@ -845,8 +924,8 @@ public class Renderer: NSObject, MTKViewDelegate
     private let dummyTexture: MTLTexture
 
     // G-Buffer
-    private let gBufferNormal: MTLTexture
-    private let gBufferRoughnessAndMetallic: MTLTexture
+    private let gBufferAlbedoAndMetallic: MTLTexture
+    private let gBufferNormalAndRoughness: MTLTexture
 
     private var scene: Scene!
 
