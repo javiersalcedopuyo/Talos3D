@@ -691,6 +691,7 @@ public class Renderer: NSObject, MTKViewDelegate
         }
     }
 
+    // TODO: Refactor or delete this whole thing
     /// Renders a model
     /// - Parameters:
     ///    - encoder:
@@ -705,10 +706,15 @@ public class Renderer: NSObject, MTKViewDelegate
         encoder.setCullMode(object.faceCulling)
 
         // Set buffers
-        self.bind(buffer:       object.getVertexBuffer(),
-                  at:           BindingPoint(index: VERTEX_BUFFER_INDEX, stage: .Vertex),
-                  withOffset:   0,
-                  inEncoder:    encoder)
+        if passType != .ScreenSpace
+        {
+            // Screen-space passes don't need a vertex buffer because the vertex positions are
+            // hardcoded. All they need is the index buffer.
+            self.bind(buffer:       object.getVertexBuffer(),
+                      at:           BindingPoint(index: VERTEX_BUFFER_INDEX, stage: .Vertex),
+                      withOffset:   0,
+                      inEncoder:    encoder)
+        }
 
         // Bind fragment resources
         switch passType
