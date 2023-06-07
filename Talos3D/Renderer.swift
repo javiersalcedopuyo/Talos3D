@@ -95,11 +95,21 @@ public class Renderer: NSObject, MTKViewDelegate
                                                                    height: Int(mtkView.drawableSize.height),
                                                                    mipmapped: false)
         gBufferDesc.usage = .renderTarget
+        gBufferDesc.storageMode = .private
         self.gBufferAlbedoAndMetallic = device.makeTexture(descriptor: gBufferDesc)!
         self.gBufferAlbedoAndMetallic.label = "G-Buffer Albedo & Metallic"
 
         self.gBufferNormalAndRoughness = device.makeTexture(descriptor: gBufferDesc)!
         self.gBufferNormalAndRoughness.label = "G-Buffer Normal & Roughness"
+
+        let gBufferDepthDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .r32Float,
+                                                                        width: Int(mtkView.drawableSize.width),
+                                                                        height: Int(mtkView.drawableSize.height),
+                                                                        mipmapped: false)
+        gBufferDepthDesc.usage = .renderTarget
+        gBufferDepthDesc.storageMode = .private
+        self.gBufferDepth = device.makeTexture(descriptor: gBufferDepthDesc)!
+        self.gBufferDepth.label = "G-Buffer Depth"
 
         super.init()
 
@@ -288,6 +298,8 @@ public class Renderer: NSObject, MTKViewDelegate
         let view = self.scene.mainCamera.getView()
         let proj = self.scene.mainCamera.getProjection()
 
+        // NOTE: The G-Buffer render targets don't need to be cleared because only the fragments
+        // flagged in the stencil will be used, and to be flagged they have to be overwritten.
         let renderPassDesc = MTLRenderPassDescriptor()
         // Albedo & metallic
         renderPassDesc.colorAttachments[0].texture     = self.gBufferAlbedoAndMetallic
@@ -297,6 +309,10 @@ public class Renderer: NSObject, MTKViewDelegate
         renderPassDesc.colorAttachments[1].texture     = self.gBufferNormalAndRoughness
         renderPassDesc.colorAttachments[1].loadAction  = .dontCare
         renderPassDesc.colorAttachments[1].storeAction = .store
+        // G-Buffer Depth
+        renderPassDesc.colorAttachments[2].texture     = self.gBufferDepth
+        renderPassDesc.colorAttachments[2].loadAction  = .dontCare
+        renderPassDesc.colorAttachments[2].storeAction = .store
         // Depth buffer
         renderPassDesc.depthAttachment.texture          = self.depthStencil
         renderPassDesc.depthAttachment.loadAction       = .clear
@@ -932,6 +948,7 @@ public class Renderer: NSObject, MTKViewDelegate
     // G-Buffer
     private let gBufferAlbedoAndMetallic: MTLTexture
     private let gBufferNormalAndRoughness: MTLTexture
+    private let gBufferDepth: MTLTexture
 
     private var scene: Scene!
 

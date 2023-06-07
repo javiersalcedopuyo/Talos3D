@@ -158,6 +158,7 @@ class PipelineManager
         desc.vertexDescriptor                 = Model.getNewVertexDescriptor()
         desc.colorAttachments[0].pixelFormat  = .bgra8Unorm // Albedo & metallic
         desc.colorAttachments[1].pixelFormat  = .bgra8Unorm // Normal & roughness
+        desc.colorAttachments[2].pixelFormat  = .r32Float   // Depth
         desc.depthAttachmentPixelFormat       = .depth32Float_stencil8
         desc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
 

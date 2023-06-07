@@ -38,6 +38,7 @@ struct VertexOut
     float3 color;
     float3 normal;
     float2 texcoord;
+    float  unnormalised_depth;
 };
 
 vertex
@@ -46,11 +47,13 @@ VertexOut g_buffer_vertex_main(VertexIn                  vert            [[ stag
                                constant ObjectMatrices&  obj             [[ buffer(OBJECT_MATRICES) ]],
                                constant float4x4&        lightViewProj   [[ buffer(LIGHT_MATRIX) ]])
 {
+    auto view_space_position = scene.view * obj.model * float4(vert.position, 1.0f);
     return {
-        .position   = scene.proj * scene.view * obj.model * float4(vert.position, 1.0f),
-        .color      = vert.color,
-        .normal     = (scene.view * obj.normal * float4(vert.normal, 0)).xyz,
-        .texcoord   = vert.texcoord
+        .position           = scene.proj * view_space_position,
+        .color              = vert.color,
+        .normal             = (scene.view * obj.normal * float4(vert.normal, 0)).xyz,
+        .texcoord           = vert.texcoord,
+        .unnormalised_depth = view_space_position.z
     };
 }
 
@@ -68,6 +71,7 @@ struct GBufferOut
 {
     float4 albedo_and_metallic  [[ color(0) ]];
     float4 normal_and_roughness [[ color(1) ]];
+    float  depth                [[ color(2) ]];
 };
 
 fragment
@@ -95,6 +99,8 @@ GBufferOut g_buffer_fragment_main(VertexOut                frag         [[ stage
     auto normal_in_view_space = normalize(frag.normal);
     output.normal_and_roughness.xyz = (normal_in_view_space + 1.f) * 0.5f;
     output.normal_and_roughness.w   = material.roughness;
+
+    output.depth = frag.unnormalised_depth;
 
     return output;
 }
