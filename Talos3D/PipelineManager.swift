@@ -174,14 +174,43 @@ class PipelineManager
         return pipeline
     }
 
-    // - MARK: Private
-    private let shaderLibrary:      MTLLibrary
-    private let device:             MTLDevice
-    private let colorFormat:        MTLPixelFormat
+    /// Lazily gets the deferred lighting pipeline
+    public func getOrCreateDeferredLightingPipeline() -> Pipeline
+    {
+        if let pipeline = self.deferredLightingPipeline
+        {
+            return pipeline
+        }
 
-    private var mainPipeline:       Pipeline? = nil
-    private var defaultPipeline:    Pipeline? = nil
-    private var shadowPipeline:     Pipeline? = nil
-    private var skyboxPipeline:     Pipeline? = nil
-    private var gBufferPipeline:    Pipeline? = nil
+        let desc = MTLRenderPipelineDescriptor()
+        desc.label                            = "Deferred Lighting PSO"
+        desc.vertexFunction                   = self.shaderLibrary.makeFunction(name: "deferred_lighting_vertex_main")
+        desc.fragmentFunction                 = self.shaderLibrary.makeFunction(name: "deferred_lighting_fragment_main")
+        desc.vertexDescriptor                 = MTLVertexDescriptor() // Empty
+        desc.colorAttachments[0].pixelFormat  = self.colorFormat
+        desc.depthAttachmentPixelFormat       = .depth32Float_stencil8
+        desc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
+
+        guard let pipeline = Pipeline(desc: desc,
+                                      device: device,
+                                      type: .ScreenSpace) else
+        {
+            fatalError("☠️ Couldn't create main pipeline state")
+        }
+
+        self.deferredLightingPipeline = pipeline
+        return pipeline
+    }
+
+    // MARK: - Private
+    private let shaderLibrary:              MTLLibrary
+    private let device:                     MTLDevice
+    private let colorFormat:                MTLPixelFormat
+
+    private var mainPipeline:               Pipeline? = nil
+    private var defaultPipeline:            Pipeline? = nil
+    private var shadowPipeline:             Pipeline? = nil
+    private var skyboxPipeline:             Pipeline? = nil
+    private var gBufferPipeline:            Pipeline? = nil
+    private var deferredLightingPipeline:   Pipeline? = nil
 }

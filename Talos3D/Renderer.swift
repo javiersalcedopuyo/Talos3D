@@ -22,6 +22,10 @@ let ALBEDO_MAP_INDEX            = TextureIndices.ALBEDO.rawValue
 let SHADOW_MAP_INDEX            = TextureIndices.SHADOW_MAP.rawValue
 let SKYBOX_INDEX                = TextureIndices.SKYBOX.rawValue
 
+let ALBEDO_AND_METALLIC_INDEX   = TextureIndices.ALBEDO_AND_METALLIC.rawValue
+let NORMAL_AND_ROUGHNESS_INDEX  = TextureIndices.NORMAL_AND_ROUGHNESS.rawValue
+let VIEW_SPACE_DEPTH_INDEX      = TextureIndices.VIEW_SPACE_DEPTH.rawValue
+
 let WORLD_UP = Vector3(x:0, y:1, z:0)
 
 let BUNNY_MODEL_NAME        = "bunny"
@@ -94,7 +98,7 @@ public class Renderer: NSObject, MTKViewDelegate
                                                                    width:  Int(mtkView.drawableSize.width),
                                                                    height: Int(mtkView.drawableSize.height),
                                                                    mipmapped: false)
-        gBufferDesc.usage = .renderTarget
+        gBufferDesc.usage = [.renderTarget, .shaderRead]
         gBufferDesc.storageMode = .private
         self.gBufferAlbedoAndMetallic = device.makeTexture(descriptor: gBufferDesc)!
         self.gBufferAlbedoAndMetallic.label = "G-Buffer Albedo & Metallic"
@@ -106,7 +110,7 @@ public class Renderer: NSObject, MTKViewDelegate
                                                                         width: Int(mtkView.drawableSize.width),
                                                                         height: Int(mtkView.drawableSize.height),
                                                                         mipmapped: false)
-        gBufferDepthDesc.usage = .renderTarget
+        gBufferDepthDesc.usage = [.renderTarget, .shaderRead]
         gBufferDepthDesc.storageMode = .private
         self.gBufferDepth = device.makeTexture(descriptor: gBufferDepthDesc)!
         self.gBufferDepth.label = "G-Buffer Depth"
@@ -217,6 +221,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
         self.renderShadowMap()
 //        self.renderGBuffer()
+//        self.applyDeferredLighting()
         self.renderScene()
 
         self.endFrame()
@@ -342,6 +347,71 @@ public class Renderer: NSObject, MTKViewDelegate
             encodeRenderCommand(encoder:    commandEncoder,
                                 object:     model,
                                 passType:   .GBuffer)
+        }
+
+        commandEncoder.endEncoding()
+    }
+
+
+    // TODO: Shadow mapping
+    // TODO: Skybox
+    // TODO: Only light the fragments where the stencil is > 0
+    func applyDeferredLighting()
+    {
+        guard let renderPassDesc = mView.currentRenderPassDescriptor else
+        {
+            SimpleLogs.ERROR("No render pass descriptor. Skipping pass.")
+            return
+        }
+        renderPassDesc.depthAttachment.texture          = self.depthStencil
+        renderPassDesc.depthAttachment.loadAction       = .load
+        renderPassDesc.depthAttachment.storeAction      = .dontCare
+
+        renderPassDesc.stencilAttachment.texture        = self.depthStencil
+        renderPassDesc.stencilAttachment.loadAction     = .load
+        renderPassDesc.stencilAttachment.storeAction    = .dontCare
+
+        guard let commandEncoder = self.currentCommandBuffer?
+                                       .makeRenderCommandEncoder(descriptor: renderPassDesc) else
+        {
+            SimpleLogs.ERROR("Couldn't create a command encoder. Skipping pass.")
+            return
+        }
+        commandEncoder.label = "Deferred lighting pass"
+
+        self.boundResources.removeAll()
+
+        self.bind(pipeline: self.pipelineManager.getOrCreateDeferredLightingPipeline(),
+                  inEncoder: commandEncoder)
+
+        commandEncoder.setVertexBytes(self.scene.mainCamera.getProjection().asPackedArray(),
+                                      length: Matrix4x4.size(),
+                                      index: SCENE_MATRICES_INDEX)
+
+        self.bind(texture: self.gBufferAlbedoAndMetallic,
+                  at: BindingPoint(index: ALBEDO_AND_METALLIC_INDEX, stage: .Fragment),
+                  inEncoder: commandEncoder)
+
+        self.bind(texture: self.gBufferNormalAndRoughness,
+                  at: BindingPoint(index: NORMAL_AND_ROUGHNESS_INDEX, stage: .Fragment),
+                  inEncoder: commandEncoder)
+
+        let dirLight = self.scene.lights[0] as! DirectionalLight
+        // Transform the light direction into view space to save the conversion in the shader
+        let directionInViewSpace = scene.mainCamera.getView() * -Vector4(dirLight.getDirection(), 0)
+        commandEncoder.setFragmentBytes(directionInViewSpace.normalized().asPackedArray() +
+                                            dirLight.color.asPackedArray(),
+                                        length: dirLight.getBufferSize(),
+                                        index: LIGHTS_BUFFER_INDEX)
+
+        // TODO: Don't reuse the skybox's model
+        for submesh in self.scene.skybox!.getMesh().submeshes
+        {
+            commandEncoder.drawIndexedPrimitives(type:                 submesh.primitiveType,
+                                                 indexCount:           submesh.indexCount,
+                                                 indexType:            submesh.indexType,
+                                                 indexBuffer:          submesh.indexBuffer.buffer,
+                                                 indexBufferOffset:    submesh.indexBuffer.offset)
         }
 
         commandEncoder.endEncoding()

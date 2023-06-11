@@ -47,6 +47,10 @@ typedef NS_ENUM(NSInteger, TextureIndices)
     ALBEDO = 0,
     SHADOW_MAP,
     SKYBOX,
+    // For the deferred Lighting pass
+    ALBEDO_AND_METALLIC,
+    NORMAL_AND_ROUGHNESS,
+    VIEW_SPACE_DEPTH,
 
     TEXTURE_COUNT
 };

@@ -39,6 +39,7 @@
 		859CEA4E277E4D4F001D07B7 /* bunny.obj in Resources */ = {isa = PBXBuildFile; fileRef = 859CEA4D277E4B63001D07B7 /* bunny.obj */; };
 		85B0DC4F292442DD00E7E8F7 /* quad.obj in Resources */ = {isa = PBXBuildFile; fileRef = 85B0DC4E292442DD00E7E8F7 /* quad.obj */; };
 		85BD8DA229C779F700211FB2 /* Skybox.metal in Sources */ = {isa = PBXBuildFile; fileRef = 85D09E0329C3BD550006FB19 /* Skybox.metal */; };
+		85FA396A2A33A2ED0005FE44 /* DeferredLighting.metal in Sources */ = {isa = PBXBuildFile; fileRef = 85FA39692A33A2ED0005FE44 /* DeferredLighting.metal */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -87,6 +88,7 @@
 		859CEA4D277E4B63001D07B7 /* bunny.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = bunny.obj; sourceTree = "<group>"; };
 		85B0DC4E292442DD00E7E8F7 /* quad.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = quad.obj; sourceTree = "<group>"; };
 		85D09E0329C3BD550006FB19 /* Skybox.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Skybox.metal; sourceTree = "<group>"; };
+		85FA39692A33A2ED0005FE44 /* DeferredLighting.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = DeferredLighting.metal; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -181,6 +183,7 @@
 				85D09E0329C3BD550006FB19 /* Skybox.metal */,
 				8588CCE729F1763C008DCB2E /* ShaderUtils.h */,
 				85404F0E2A2FC8D000BBFD0F /* GBuffer.metal */,
+				85FA39692A33A2ED0005FE44 /* DeferredLighting.metal */,
 			);
 			path = Shaders;
 			sourceTree = "<group>";
@@ -340,6 +343,7 @@
 				85362B4529466534001A2E6C /* ShadowPass.metal in Sources */,
 				859CEA2B277DE361001D07B7 /* Renderer.swift in Sources */,
 				85607EBB27C2DE9800586527 /* Light.swift in Sources */,
+				85FA396A2A33A2ED0005FE44 /* DeferredLighting.metal in Sources */,
 				853291D8278376D300DE4B93 /* Mobile.swift in Sources */,
 				85405CD528B13B7600272372 /* Material.swift in Sources */,
 				853291D6278370CE00DE4B93 /* Camera.swift in Sources */,
