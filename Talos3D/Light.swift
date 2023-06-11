@@ -49,9 +49,9 @@ class DirectionalLight : LightSource
     public func getBufferData() -> [Float]
     {
         var data = [Float](repeating: 0.0, count: 8)
-        data[0] = self.transform.getForward().x
-        data[1] = self.transform.getForward().y
-        data[2] = self.transform.getForward().z
+        data[0] = self.getDirection().x
+        data[1] = self.getDirection().y
+        data[2] = self.getDirection().z
         data[3] = 0 // Padding
 
         // Pre-multiply the intensity with the color to save bandwidth
@@ -100,8 +100,9 @@ class DirectionalLight : LightSource
         self.transform.lookAt(target)
     }
 
-    public func getPosition() -> Vector3 { self.transform.position }
-    public func getRotation() -> Vector3 { self.transform.getEulerAngles() }
+    public func getPosition()  -> Vector3 { self.transform.position }
+    public func getRotation()  -> Vector3 { self.transform.getEulerAngles() }
+    public func getDirection() -> Vector3 { self.transform.getForward() }
 
     public func getView() -> Matrix4x4
     {
