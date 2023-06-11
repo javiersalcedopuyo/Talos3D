@@ -18,7 +18,7 @@ using namespace metal;
 /// - Return:
 ///		- Inverse of the input matrix if it's not singular.
 ///		- Otherwise returns the transpose which is *not correct* but at least is somewhat usable.
-auto inverse(float4x4 matrix) -> float4x4
+static auto inverse(float4x4 matrix) -> float4x4
 {
     if (determinant(matrix) == 0)
     {

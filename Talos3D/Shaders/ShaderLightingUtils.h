@@ -23,10 +23,10 @@ using namespace metal;
 ///     - sampleRadius
 /// - Returns:
 ///     - shadow: [0,1] How shaded the fragment is (0 = fully lit, 1 = fully shaded)
-auto PCF(float2            texCoords,
-         texture2d<float>  shadowMap,
-         float             fragDepth,
-         int               sampleRadius)
+static auto PCF(float2            texCoords,
+                texture2d<float>  shadowMap,
+                float             fragDepth,
+                int               sampleRadius)
 -> float
 {
     constexpr sampler smp(min_filter::linear,
@@ -60,7 +60,7 @@ auto PCF(float2            texCoords,
 /// - Returns:
 ///     - shadowMapCoord.xy = Shadow map coordinates
 ///     - shadowMapCoord.z  = Fragment's depth as seen from the light
-auto TransformPositionFromLightToShadowMap(float4 lightSpacePosition) -> float3
+static auto TransformPositionFromLightToShadowMap(float4 lightSpacePosition) -> float3
 {
     // Transform from clip to device coordinate system.
     // Orthographic projection matrices don't really need it.
@@ -79,7 +79,7 @@ auto TransformPositionFromLightToShadowMap(float4 lightSpacePosition) -> float3
 ///     - shadowMap
 /// - Returns:
 ///     - shadowCoefficient: [0,1] How shaded the fragment is (0 = fully lit, 1 = fully shaded)
-auto ComputeShadow(float4 lightSpacePosition, texture2d<float> shadowMap) -> float
+static auto ComputeShadow(float4 lightSpacePosition, texture2d<float> shadowMap) -> float
 {
     auto shadowMapCoord = TransformPositionFromLightToShadowMap(lightSpacePosition);
     auto fragDepth = shadowMapCoord.z; // NOTE: Depth from the camera!
@@ -98,10 +98,10 @@ auto ComputeShadow(float4 lightSpacePosition, texture2d<float> shadowMap) -> flo
 ///     - glossyCoefficient
 /// Returns:
 ///     - Specular Coefficient
-auto ComputeBlinnSpecular(float3 viewDirection,
-                          float3 lightDirection,
-                          float3 normal,
-                          float  glossyCoefficient)
+static auto ComputeBlinnSpecular(float3 viewDirection,
+                                 float3 lightDirection,
+                                 float3 normal,
+                                 float  glossyCoefficient)
 -> float
 {
     auto halfVector = normalize(lightDirection + viewDirection);
@@ -123,10 +123,10 @@ auto ComputeBlinnSpecular(float3 viewDirection,
 ///     - roughness
 /// Returns:
 ///     - specularCoefficient
-auto ComputeGaussianSpecular(float3 viewDirection,
-                             float3 lightDirection,
-                             float3 normal,
-                             float  roughness)
+static auto ComputeGaussianSpecular(float3 viewDirection,
+                                    float3 lightDirection,
+                                    float3 normal,
+                                    float  roughness)
 -> float
 {
     auto halfVector = normalize(lightDirection + viewDirection);
