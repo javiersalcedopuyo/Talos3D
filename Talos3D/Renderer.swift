@@ -298,20 +298,18 @@ public class Renderer: NSObject, MTKViewDelegate
         let view = self.scene.mainCamera.getView()
         let proj = self.scene.mainCamera.getProjection()
 
-        // NOTE: The G-Buffer render targets don't need to be cleared because only the fragments
-        // flagged in the stencil will be used, and to be flagged they have to be overwritten.
         let renderPassDesc = MTLRenderPassDescriptor()
         // Albedo & metallic
         renderPassDesc.colorAttachments[0].texture     = self.gBufferAlbedoAndMetallic
-        renderPassDesc.colorAttachments[0].loadAction  = .dontCare
+        renderPassDesc.colorAttachments[0].loadAction  = .clear
         renderPassDesc.colorAttachments[0].storeAction = .store
         // Normal & roughness
         renderPassDesc.colorAttachments[1].texture     = self.gBufferNormalAndRoughness
-        renderPassDesc.colorAttachments[1].loadAction  = .dontCare
+        renderPassDesc.colorAttachments[1].loadAction  = .clear
         renderPassDesc.colorAttachments[1].storeAction = .store
         // G-Buffer Depth
         renderPassDesc.colorAttachments[2].texture     = self.gBufferDepth
-        renderPassDesc.colorAttachments[2].loadAction  = .dontCare
+        renderPassDesc.colorAttachments[2].loadAction  = .clear
         renderPassDesc.colorAttachments[2].storeAction = .store
         // Depth buffer
         renderPassDesc.depthAttachment.texture          = self.depthStencil
