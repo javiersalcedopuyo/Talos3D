@@ -38,7 +38,6 @@ struct VertexOut
     float3 color;
     float3 normal;
     float2 texcoord;
-    float  unnormalised_depth;
 };
 
 vertex
@@ -53,7 +52,6 @@ VertexOut g_buffer_vertex_main(VertexIn                  vert            [[ stag
         .color              = vert.color,
         .normal             = (scene.view * obj.normal * float4(vert.normal, 0)).xyz,
         .texcoord           = vert.texcoord,
-        .unnormalised_depth = view_space_position.z
     };
 }
 
@@ -100,7 +98,7 @@ GBufferOut g_buffer_fragment_main(VertexOut                frag         [[ stage
     output.normal_and_roughness.xyz = (normal_in_view_space + 1.f) * 0.5f;
     output.normal_and_roughness.w   = material.roughness;
 
-    output.depth = frag.unnormalised_depth;
+    output.depth = frag.position.z;
 
     return output;
 }

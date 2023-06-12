@@ -24,7 +24,7 @@ let SKYBOX_INDEX                = TextureIndices.SKYBOX.rawValue
 
 let ALBEDO_AND_METALLIC_INDEX   = TextureIndices.ALBEDO_AND_METALLIC.rawValue
 let NORMAL_AND_ROUGHNESS_INDEX  = TextureIndices.NORMAL_AND_ROUGHNESS.rawValue
-let VIEW_SPACE_DEPTH_INDEX      = TextureIndices.VIEW_SPACE_DEPTH.rawValue
+let DEPTH_INDEX                 = TextureIndices.DEPTH.rawValue
 
 let WORLD_UP = Vector3(x:0, y:1, z:0)
 

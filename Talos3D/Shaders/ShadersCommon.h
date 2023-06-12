@@ -50,7 +50,7 @@ typedef NS_ENUM(NSInteger, TextureIndices)
     // For the deferred Lighting pass
     ALBEDO_AND_METALLIC,
     NORMAL_AND_ROUGHNESS,
-    VIEW_SPACE_DEPTH,
+    DEPTH,
 
     TEXTURE_COUNT
 };
