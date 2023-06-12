@@ -45,7 +45,6 @@ VertexOut vertex_main(VertexIn                  vert            [[ stage_in ]],
 {
     VertexOut out;
     out.positionInViewSpace = scene.view * obj.model * float4(vert.position, 1.0f);
-    out.positionInViewSpace /= out.positionInViewSpace.w;
     out.position = scene.proj * out.positionInViewSpace;
     out.positionInLightSpace = lightViewProj * obj.model * float4(vert.position, 1.0f);
     out.color    = vert.color;
@@ -87,7 +86,7 @@ float4 fragment_main(VertexOut                  frag        [[ stage_in ]],
 
     auto normalInViewSpace      = normalize(frag.normal);
     auto lightDirInViewSpace    = normalize(scene.view * float4(-light.direction, 0));
-    auto viewDirInViewSpace     = normalize(-frag.positionInViewSpace);
+    auto viewDirInViewSpace     = normalize(-frag.positionInViewSpace.xyz);
 
     auto albedo = is_null_texture(tex)
                     ? float4(1,0,1,1)
