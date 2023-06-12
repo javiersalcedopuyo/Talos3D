@@ -384,10 +384,6 @@ public class Renderer: NSObject, MTKViewDelegate
         self.bind(pipeline: self.pipelineManager.getOrCreateDeferredLightingPipeline(),
                   inEncoder: commandEncoder)
 
-        commandEncoder.setVertexBytes(self.scene.mainCamera.getProjection().asPackedArray(),
-                                      length: Matrix4x4.size(),
-                                      index: SCENE_MATRICES_INDEX)
-
         self.bind(texture: self.gBufferAlbedoAndMetallic,
                   at: BindingPoint(index: ALBEDO_AND_METALLIC_INDEX, stage: .Fragment),
                   inEncoder: commandEncoder)
@@ -396,6 +392,21 @@ public class Renderer: NSObject, MTKViewDelegate
                   at: BindingPoint(index: NORMAL_AND_ROUGHNESS_INDEX, stage: .Fragment),
                   inEncoder: commandEncoder)
 
+        self.bind(texture: self.gBufferDepth,
+                  at: BindingPoint(index: DEPTH_INDEX, stage: .Fragment),
+                  inEncoder: commandEncoder)
+
+        self.bind(texture: self.shadowMap,
+                  at: BindingPoint(index: SHADOW_MAP_INDEX, stage: .Fragment),
+                  inEncoder: commandEncoder)
+
+        // TODO: Invert the matrices
+        commandEncoder.setFragmentBytes(self.scene.mainCamera.getView().asPackedArray() +
+                                            self.scene.mainCamera.getProjection().asPackedArray(),
+                                        length: Matrix4x4.size() * 2,
+                                        index: SCENE_MATRICES_INDEX)
+
+        // TODO: Multiple lights
         let dirLight = self.scene.lights[0] as! DirectionalLight
         // Transform the light direction into view space to save the conversion in the shader
         let directionInViewSpace = scene.mainCamera.getView() * -Vector4(dirLight.getDirection(), 0)
@@ -403,6 +414,11 @@ public class Renderer: NSObject, MTKViewDelegate
                                             dirLight.color.asPackedArray(),
                                         length: dirLight.getBufferSize(),
                                         index: LIGHTS_BUFFER_INDEX)
+
+        let lightMatrix = (dirLight.projection ?? .identity()) * dirLight.getView()
+        commandEncoder.setFragmentBytes(lightMatrix.asPackedArray(),
+                                        length: Matrix4x4.size(),
+                                        index: LIGHT_MATRIX_INDEX)
 
         // TODO: Don't reuse the skybox's model
         for submesh in self.scene.skybox!.getMesh().submeshes
