@@ -94,7 +94,7 @@ public class Renderer: NSObject, MTKViewDelegate
         self.dummyTexture = dummy
 
         // TODO: createGBuffer()
-        let gBufferDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm,
+        let gBufferDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba32Float,
                                                                    width:  Int(mtkView.drawableSize.width),
                                                                    height: Int(mtkView.drawableSize.height),
                                                                    mipmapped: false)

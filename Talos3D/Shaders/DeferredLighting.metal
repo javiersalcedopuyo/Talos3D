@@ -67,7 +67,7 @@ float4 deferred_lighting_fragment_main(VertexOut frag [[ stage_in ]],
     auto albedo_and_metallic  = g_buffer_0.read(fragment_coords);
     auto normal_and_roughness = g_buffer_1.read(fragment_coords);
 
-    auto normal = normalize(normal_and_roughness.xyz * 2.f - 1.f); // DOUBT: I'm not sure why I need to normalize again
+    auto normal = normal_and_roughness.xyz * 2.f - 1.f;
     auto roughness = normal_and_roughness.w;
 
     auto lambertian = saturate(dot(normal, light.direction.xyz));
