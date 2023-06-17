@@ -353,9 +353,6 @@ public class Renderer: NSObject, MTKViewDelegate
     }
 
 
-    // TODO: Shadow mapping
-    // TODO: Skybox
-    // TODO: Only light the fragments where the stencil is > 0
     func applyDeferredLighting()
     {
         guard let renderPassDesc = mView.currentRenderPassDescriptor else
@@ -378,6 +375,11 @@ public class Renderer: NSObject, MTKViewDelegate
             return
         }
         commandEncoder.label = "Deferred lighting pass"
+
+        // In the lighting stage we want to shade the fragments that have already been "touched",
+        // while in the skybox draw call we'll shade the ones that haven't
+        commandEncoder.setStencilReferenceValue(0)
+        commandEncoder.setDepthStencilState(self.screenSpaceLightingStencilState)
 
         self.boundResources.removeAll()
 
@@ -434,7 +436,6 @@ public class Renderer: NSObject, MTKViewDelegate
         if let skybox = self.scene.skybox
         {
             commandEncoder.setDepthStencilState(self.skyboxDepthStencilState)
-            commandEncoder.setStencilReferenceValue(0) // We only want to write to the untouched fragments
 
             commandEncoder.setVertexBytes(self.scene.mainCamera.getView().asPackedArray() +
                                             self.scene.mainCamera.getProjection().asPackedArray(),
@@ -623,15 +624,29 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         self.mainDepthStencilState = mds
 
-        // Skybox
-        stencilDesc.stencilCompareFunction = .equal // Only write to the untouched fragments
-
-        let skyboxDSDesc = MTLDepthStencilDescriptor()
-        skyboxDSDesc.frontFaceStencil       = stencilDesc
+        let screenSpaceDSDesc = MTLDepthStencilDescriptor()
+        // Don't write to the stencil anymore
+        screenSpaceDSDesc.frontFaceStencil.depthStencilPassOperation = .keep
         // The screen-space quad will be in front of the camera so we have to ignore the depth
-        skyboxDSDesc.isDepthWriteEnabled    = false
-        skyboxDSDesc.depthCompareFunction   = .always
-        if let ds = device.makeDepthStencilState(descriptor: skyboxDSDesc)
+        screenSpaceDSDesc.isDepthWriteEnabled  = false
+        screenSpaceDSDesc.depthCompareFunction = .always
+
+        // Screen-space lighting
+        // Only write to the fragments that have been already "touched" (reference will be 0)
+        screenSpaceDSDesc.frontFaceStencil.stencilCompareFunction = .less
+        if let ds = device.makeDepthStencilState(descriptor: screenSpaceDSDesc)
+        {
+            self.screenSpaceLightingStencilState = ds
+        }
+        else
+        {
+            fatalError("Couldn't create the screen space lighting depth/stencil state")
+        }
+
+        // Skybox
+        // Only write to the untouched fragments
+        screenSpaceDSDesc.frontFaceStencil.stencilCompareFunction = .equal
+        if let ds = device.makeDepthStencilState(descriptor: screenSpaceDSDesc)
         {
             self.skyboxDepthStencilState = ds
         }
@@ -1037,9 +1052,10 @@ public class Renderer: NSObject, MTKViewDelegate
     private let pipelineManager: PipelineManager
     private var currentlyBoundPipelineID: ObjectIdentifier? = nil // TODO: Per encoder
 
-    private var mainDepthStencilState:      MTLDepthStencilState!
-    private var shadowDepthStencilState:    MTLDepthStencilState!
-    private var skyboxDepthStencilState:    MTLDepthStencilState!
+    private var mainDepthStencilState:              MTLDepthStencilState!
+    private var shadowDepthStencilState:            MTLDepthStencilState!
+    private var screenSpaceLightingStencilState:    MTLDepthStencilState!
+    private var skyboxDepthStencilState:            MTLDepthStencilState!
 
     private var shadowMap:    MTLTexture
     private var depthStencil: MTLTexture
