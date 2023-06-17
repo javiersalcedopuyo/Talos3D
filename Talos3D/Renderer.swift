@@ -430,6 +430,22 @@ public class Renderer: NSObject, MTKViewDelegate
                                                  indexBufferOffset:    submesh.indexBuffer.offset)
         }
 
+        // Skybox
+        if let skybox = self.scene.skybox
+        {
+            commandEncoder.setDepthStencilState(self.skyboxDepthStencilState)
+            commandEncoder.setStencilReferenceValue(0) // We only want to write to the untouched fragments
+
+            commandEncoder.setVertexBytes(self.scene.mainCamera.getView().asPackedArray() +
+                                            self.scene.mainCamera.getProjection().asPackedArray(),
+                                          length: Matrix4x4.size() * 2,
+                                          index: SCENE_MATRICES_INDEX)
+
+            encodeRenderCommand(encoder:    commandEncoder,
+                                object:     skybox,
+                                passType:   .ScreenSpace)
+        }
+
         commandEncoder.endEncoding()
     }
 
