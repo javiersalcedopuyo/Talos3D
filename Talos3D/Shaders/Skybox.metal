@@ -49,6 +49,11 @@ VertexOut skybox_vertex_main(uint id [[vertex_id]],
     // NOTE: Iverting them on the CPU would save time in the GPU, but it's only 4 vertices (3 in
     // the future, so the cost of rebinding the inverse matrices is probably higher than doing it
     // in the shader. However, inverting the projection is expensive, so it should be profiled.
+    //
+    // NOTE: Transposing the view doesn't exactly invert it. It only inverts the rotation, and the
+    // w of the resulting vector won't be 1 anymore. But in this case we don't want to apply any
+    // camera translation and we'll only use the xyz to sample the cubemap, so this is good enough
+    // and way faster than a correct inversion.
     out.view_dir_in_world_space = transpose(scene.view) *
                                   inverse(scene.proj) *
                                   out.position;

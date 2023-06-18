@@ -74,5 +74,39 @@ static auto inverse(float4x4 matrix) -> float4x4
     }
     return inverse;
 }
+
+/// Fast matrix inversion, assuming it represents a linear transform (Rotation & Translation).
+/// A linear transform can be decomposed into a rotation and a translation, and those matrices are
+/// simple to invert.
+/// - A rotation matrix is always orthonormal, so it can be inverted by simply transposing it.
+/// - A translation matrix can be inverted just by negating the xyz of the last column.
+///
+/// - Parameters:
+///     - M: Transform matrix to invert. Must be a linear transform.
+/// - Returns:
+///     - A new matrix, inverse of the input
+static auto invert_linear_transform(float4x4 M) -> float4x4
+{
+    // M = |R T|
+    //     |0 1|
+
+    // Invert the translation
+    // inv_t = |I -T|
+    //         |0  1|
+    auto inv_T = float4x4(1);
+    inv_T.columns[3].xyz = -M.columns[3].xyz;
+
+    // Invert the rotation.
+    // inv_R = |R^t 0|
+    //         | 0  1|
+    auto inv_R = transpose(M);
+    for (auto i=0u; i<3u; ++i)
+    {
+        inv_R.columns[i][3] = 0;
+    }
+
+    // NOTE: inv(T * R) = inv(R) * inv(T)
+    return inv_R * inv_T;
+}
 #endif // ShaderUtils_h
 #endif // __METAL_VERSION__

@@ -106,7 +106,10 @@ float4 deferred_lighting_fragment_main(VertexOut frag [[ stage_in ]],
     specular *= mix(0.f, 1.f, lambertian >= 0.f);
 
     // Shadow mapping
-    auto light_space_position = light_matrix * inverse(matrices.view) * view_space_position;
+    auto light_space_position = light_matrix *
+                                invert_linear_transform(matrices.view) *
+                                view_space_position;
+
     auto shadow = is_null_texture(shadow_map)
                     ? 0.f
                     : ComputeShadow(light_space_position, shadow_map);
