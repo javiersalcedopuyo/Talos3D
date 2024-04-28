@@ -220,9 +220,8 @@ public class Renderer: NSObject, MTKViewDelegate
         self.beginFrame()
 
         self.renderShadowMap()
-//        self.renderGBuffer()
-//        self.applyDeferredLighting()
-        self.renderScene()
+        self.renderGBuffer()
+        self.applyDeferredLighting()
 
         self.endFrame()
     }
@@ -451,7 +450,7 @@ public class Renderer: NSObject, MTKViewDelegate
     }
 
     /// Main pass. Renders the scene objects in a forward way.
-    func renderScene()
+    func renderSceneForward()
     {
         let view = self.scene.mainCamera.getView()
         let proj = self.scene.mainCamera.getProjection()
@@ -658,8 +657,8 @@ public class Renderer: NSObject, MTKViewDelegate
 
     private func createMaterials(device: MTLDevice)
     {
-//        let mainPipeline = self.pipelineManager.getOrCreateGBufferPipeline()
-        let mainPipeline = self.pipelineManager.getOrCreateMainPipeline()
+        let mainPipeline = self.pipelineManager.getOrCreateGBufferPipeline()
+
         let material1 = Material(pipeline: mainPipeline, label: TEST_MATERIAL_NAME_1)
         if let tex = Self.loadTexture(name: TEST_TEXTURE_NAME_1,
                                       index: ALBEDO_MAP_INDEX,
