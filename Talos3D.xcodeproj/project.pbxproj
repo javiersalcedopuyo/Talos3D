@@ -20,6 +20,7 @@
 		8544819D29EDE12D009A2105 /* PipelineManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8544819C29EDE12D009A2105 /* PipelineManager.swift */; };
 		8548252828C6073E00514ED0 /* CameraTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8548252728C6073E00514ED0 /* CameraTests.swift */; };
 		854D844728C512FA00B70916 /* teapot.obj in Resources */ = {isa = PBXBuildFile; fileRef = 854D844628C512FA00B70916 /* teapot.obj */; };
+		854F396B2BE41ACA0062E1D4 /* GridGizmo.metal in Sources */ = {isa = PBXBuildFile; fileRef = 854F396A2BE41ACA0062E1D4 /* GridGizmo.metal */; };
 		8556209F28C69A7500BF9475 /* TransformTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8556209E28C69A7500BF9475 /* TransformTests.swift */; };
 		85607EBB27C2DE9800586527 /* Light.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85607EBA27C2DE9800586527 /* Light.swift */; };
 		857EFDF62780B679009800F2 /* Positionable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 857EFDF52780B679009800F2 /* Positionable.swift */; };
@@ -68,6 +69,7 @@
 		8548251E28C6071600514ED0 /* Talos3DTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Talos3DTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8548252728C6073E00514ED0 /* CameraTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTests.swift; sourceTree = "<group>"; };
 		854D844628C512FA00B70916 /* teapot.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = teapot.obj; sourceTree = "<group>"; };
+		854F396A2BE41ACA0062E1D4 /* GridGizmo.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = GridGizmo.metal; sourceTree = "<group>"; };
 		8556209E28C69A7500BF9475 /* TransformTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransformTests.swift; sourceTree = "<group>"; };
 		85607EBA27C2DE9800586527 /* Light.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Light.swift; sourceTree = "<group>"; };
 		857EFDF52780B679009800F2 /* Positionable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Positionable.swift; sourceTree = "<group>"; };
@@ -184,6 +186,7 @@
 				8588CCE729F1763C008DCB2E /* ShaderUtils.h */,
 				85404F0E2A2FC8D000BBFD0F /* GBuffer.metal */,
 				85FA39692A33A2ED0005FE44 /* DeferredLighting.metal */,
+				854F396A2BE41ACA0062E1D4 /* GridGizmo.metal */,
 			);
 			path = Shaders;
 			sourceTree = "<group>";
@@ -344,6 +347,7 @@
 				859CEA2B277DE361001D07B7 /* Renderer.swift in Sources */,
 				85607EBB27C2DE9800586527 /* Light.swift in Sources */,
 				85FA396A2A33A2ED0005FE44 /* DeferredLighting.metal in Sources */,
+				854F396B2BE41ACA0062E1D4 /* GridGizmo.metal in Sources */,
 				853291D8278376D300DE4B93 /* Mobile.swift in Sources */,
 				85405CD528B13B7600272372 /* Material.swift in Sources */,
 				853291D6278370CE00DE4B93 /* Camera.swift in Sources */,

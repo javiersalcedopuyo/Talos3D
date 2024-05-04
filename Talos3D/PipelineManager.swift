@@ -202,6 +202,42 @@ class PipelineManager
         return pipeline
     }
 
+    /// Lazily gets the grid gizmo's pipeline
+    public func getOrCreateGridGizmoPipeline() -> Pipeline
+    {
+        if let pipeline = self.gridGizmoPipeline
+        {
+            return pipeline
+        }
+
+        let desc = MTLRenderPipelineDescriptor()
+        desc.label                            = "Grid Gizmo PSO"
+        desc.vertexFunction                   = self.shaderLibrary.makeFunction(name: "grid_gizmo_vertex_main")
+        desc.fragmentFunction                 = self.shaderLibrary.makeFunction(name: "grid_gizmo_fragment_main")
+        desc.vertexDescriptor                 = MTLVertexDescriptor() // Empty
+        desc.depthAttachmentPixelFormat       = .depth32Float_stencil8
+        desc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
+
+        desc.colorAttachments[0].pixelFormat                    = self.colorFormat
+        desc.colorAttachments[0].isBlendingEnabled              = true
+        desc.colorAttachments[0].rgbBlendOperation              = .add
+        desc.colorAttachments[0].sourceRGBBlendFactor           = .sourceAlpha
+        desc.colorAttachments[0].destinationRGBBlendFactor      = .oneMinusSourceAlpha
+        desc.colorAttachments[0].alphaBlendOperation            = .add
+        desc.colorAttachments[0].sourceAlphaBlendFactor         = .sourceAlpha
+        desc.colorAttachments[0].destinationAlphaBlendFactor    = .oneMinusSourceAlpha
+
+        guard let pipeline = Pipeline(desc: desc,
+                                      device: device,
+                                      type: .ScreenSpace) else
+        {
+            fatalError("☠️ Couldn't create main pipeline state")
+        }
+
+        self.gridGizmoPipeline = pipeline
+        return pipeline
+    }
+
     // MARK: - Private
     private let shaderLibrary:              MTLLibrary
     private let device:                     MTLDevice
@@ -213,4 +249,6 @@ class PipelineManager
     private var skyboxPipeline:             Pipeline? = nil
     private var gBufferPipeline:            Pipeline? = nil
     private var deferredLightingPipeline:   Pipeline? = nil
+
+    private var gridGizmoPipeline:          Pipeline? = nil
 }

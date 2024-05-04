@@ -14,7 +14,7 @@ A Metal toy engine written on Swift with the intention of learning Metal and imp
 - [x] Skybox
 
 ## Planned features
-- [ ] Deferred rendering
+- [x] Deferred rendering
 - [ ] Procedural skybox
 - [ ] SSAO
 - [ ] Physically-Based Rendering

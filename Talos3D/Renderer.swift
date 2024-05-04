@@ -222,6 +222,7 @@ public class Renderer: NSObject, MTKViewDelegate
         self.renderShadowMap()
         self.renderGBuffer()
         self.applyDeferredLighting()
+        self.renderGizmos()
 
         self.endFrame()
     }
@@ -361,11 +362,11 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         renderPassDesc.depthAttachment.texture          = self.depthStencil
         renderPassDesc.depthAttachment.loadAction       = .load
-        renderPassDesc.depthAttachment.storeAction      = .dontCare
+        renderPassDesc.depthAttachment.storeAction      = .store
 
         renderPassDesc.stencilAttachment.texture        = self.depthStencil
         renderPassDesc.stencilAttachment.loadAction     = .load
-        renderPassDesc.stencilAttachment.storeAction    = .dontCare
+        renderPassDesc.stencilAttachment.storeAction    = .store
 
         guard let commandEncoder = self.currentCommandBuffer?
                                        .makeRenderCommandEncoder(descriptor: renderPassDesc) else
@@ -527,6 +528,62 @@ public class Renderer: NSObject, MTKViewDelegate
     public var mView: MTKView
 
     // MARK: - Private
+    private func renderGizmos()
+    {
+        guard let renderPassDesc = mView.currentRenderPassDescriptor else
+        {
+            SimpleLogs.ERROR("No render pass descriptor. Skipping pass.")
+            return
+        }
+        renderPassDesc.colorAttachments[0].loadAction   = .load
+
+        renderPassDesc.depthAttachment.texture          = self.depthStencil
+        renderPassDesc.depthAttachment.loadAction       = .load
+        renderPassDesc.depthAttachment.storeAction      = .dontCare
+
+        renderPassDesc.stencilAttachment.texture        = self.depthStencil
+        renderPassDesc.stencilAttachment.loadAction     = .load
+        renderPassDesc.stencilAttachment.storeAction    = .dontCare
+
+        guard let commandEncoder = self.currentCommandBuffer?
+                                       .makeRenderCommandEncoder(descriptor: renderPassDesc) else
+        {
+            SimpleLogs.ERROR("Couldn't create a command encoder. Skipping pass.")
+            return
+        }
+        commandEncoder.label = "Gizmos"
+
+        // We want to render the grid behind any object already rendered
+        commandEncoder.setStencilReferenceValue(0)
+        commandEncoder.setDepthStencilState(self.skyboxDepthStencilState) // TODO: Use its own DS state
+
+        self.boundResources.removeAll()
+
+        commandEncoder.setVertexBytes(
+            self.scene.mainCamera.getView().asPackedArray()
+                + self.scene.mainCamera.getProjection().asPackedArray(),
+            length: Matrix4x4.size() * 2,
+            index: SCENE_MATRICES_INDEX)
+
+        self.bind(
+            pipeline: self.pipelineManager.getOrCreateGridGizmoPipeline(),
+            inEncoder: commandEncoder)
+
+        // TODO: Don't reuse the skybox's model
+        for submesh in self.scene.skybox!.getMesh().submeshes
+        {
+            commandEncoder.drawIndexedPrimitives(
+                type:               submesh.primitiveType,
+                indexCount:         submesh.indexCount,
+                indexType:          submesh.indexType,
+                indexBuffer:        submesh.indexBuffer.buffer,
+                indexBufferOffset:  submesh.indexBuffer.offset)
+        }
+
+        commandEncoder.endEncoding()
+    }
+
+
     /// Creates a new texture to be used as a shadow map
     /// - Parameters:
     ///     - width
