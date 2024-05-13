@@ -115,6 +115,11 @@ public class Renderer: NSObject, MTKViewDelegate
         self.gBufferDepth = device.makeTexture(descriptor: gBufferDepthDesc)!
         self.gBufferDepth.label = "G-Buffer Depth"
 
+        self.quadIndexBuffer = device.makeBuffer(
+            bytes: [0,1,2,1,3,2] as [UInt16],
+            length: 6 * 2, // In bytes!
+            options: [.storageModeManaged, .hazardTrackingModeUntracked])
+
         super.init()
 
         self.createDepthStencilStates(device: device)
@@ -553,9 +558,8 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         commandEncoder.label = "Gizmos"
 
-        // We want to render the grid behind any object already rendered
-        commandEncoder.setStencilReferenceValue(0)
-        commandEncoder.setDepthStencilState(self.skyboxDepthStencilState) // TODO: Use its own DS state
+        // The grid is just a normal plane and needs depth testing
+        commandEncoder.setDepthStencilState(self.mainDepthStencilState)
 
         self.boundResources.removeAll()
 
@@ -569,16 +573,13 @@ public class Renderer: NSObject, MTKViewDelegate
             pipeline: self.pipelineManager.getOrCreateGridGizmoPipeline(),
             inEncoder: commandEncoder)
 
-        // TODO: Don't reuse the skybox's model
-        for submesh in self.scene.skybox!.getMesh().submeshes
-        {
-            commandEncoder.drawIndexedPrimitives(
-                type:               submesh.primitiveType,
-                indexCount:         submesh.indexCount,
-                indexType:          submesh.indexType,
-                indexBuffer:        submesh.indexBuffer.buffer,
-                indexBufferOffset:  submesh.indexBuffer.offset)
-        }
+        // The vertex positions are hardcoded in the shader
+        commandEncoder.drawIndexedPrimitives(
+            type:               .triangleStrip,
+            indexCount:         6,
+            indexType:          .uint16,
+            indexBuffer:        self.quadIndexBuffer,
+            indexBufferOffset:  0)
 
         commandEncoder.endEncoding()
     }
@@ -1121,6 +1122,8 @@ public class Renderer: NSObject, MTKViewDelegate
     private let gBufferAlbedoAndMetallic: MTLTexture
     private let gBufferNormalAndRoughness: MTLTexture
     private let gBufferDepth: MTLTexture
+
+    private let quadIndexBuffer: MTLBuffer!
 
     private var scene: Scene!
 

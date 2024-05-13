@@ -22,7 +22,7 @@ struct SceneMatrices
 
 struct VertexOut
 {
-    float4 position [[ position ]];
+    float4 position [[ position ]] [[ invariant ]];
     float2 UVs;
 };
 
