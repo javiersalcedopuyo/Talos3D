@@ -565,8 +565,9 @@ public class Renderer: NSObject, MTKViewDelegate
 
         commandEncoder.setVertexBytes(
             self.scene.mainCamera.getView().asPackedArray()
-                + self.scene.mainCamera.getProjection().asPackedArray(),
-            length: Matrix4x4.size() * 2,
+                + self.scene.mainCamera.getProjection().asPackedArray()
+                + self.scene.mainCamera.getPosition().asPackedArray(),
+            length: Matrix4x4.size() * 2 +  MemoryLayout<Vector3>.size,
             index: SCENE_MATRICES_INDEX)
 
         self.bind(

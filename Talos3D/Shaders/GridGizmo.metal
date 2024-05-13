@@ -17,6 +17,7 @@ struct SceneMatrices
 {
     float4x4 view;
     float4x4 proj;
+    float3 camera_pos;
 };
 
 
@@ -24,6 +25,7 @@ struct VertexOut
 {
     float4 position [[ position ]] [[ invariant ]];
     float2 UVs;
+    float2 fade_UVs;
 };
 
 using FragmentIn = VertexOut;
@@ -58,10 +60,20 @@ auto grid_gizmo_vertex_main(
 {
     auto vpos = positions[ id ];
     vpos.xyz *= grid_size;
+    vpos.xz += scene.camera_pos.xz; // Make the quad follow the camera so it *looks* infinite
+
+    // Fade the grid around the camera projection on the plane
+    auto fade_UVs = positions[ id ].xz * 2.0;
+    {
+        // Reduce the fade radius as the camera closer than 1m to the plane
+        auto t = 1.0 - saturate( abs(scene.camera_pos.y) );
+        fade_UVs *= mix(3.5, 10., t);
+    }
 
     return {
         .position = scene.proj * scene.view * vpos,
-        .UVs = positions[id].xz * 2.0 };
+        .UVs = vpos.xz * 2.0 / grid_size,
+        .fade_UVs = fade_UVs };
 }
 
 
@@ -103,7 +115,7 @@ auto grid_gizmo_fragment_main( FragmentIn frag [[ stage_in ]]) -> float4
         discard_fragment();
     }
 
-    const auto opacity_falloff = 1.0 - sqrt( length(frag.UVs*10.0) ); // TODO: Fade around the camera
+    const auto opacity_falloff = 1.0 - sqrt( length(frag.fade_UVs) );
     auto output = grid_color;
     output.a *= opacity_falloff;
     return output;
