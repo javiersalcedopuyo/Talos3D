@@ -23,28 +23,18 @@ struct VertexOut
     float4 view_dir_in_world_space;
 };
 
+static constant float4 vertices[4]{
+    { -1.0,  1.0, 0.0, 1.0 },
+    {  1.0,  1.0, 0.0, 1.0 },
+    { -1.0, -1.0, 0.0, 1.0 },
+    {  1.0, -1.0, 0.0, 1.0 } };
+
 vertex
 VertexOut skybox_vertex_main(uint id [[vertex_id]],
                              constant SceneMatrices& scene [[ buffer(SCENE_MATRICES) ]])
 {
     VertexOut out;
-    // TODO: Use math to avoid branching
-    switch (id)
-    {
-        default:
-        case 0:
-            out.position = float4(-1, 1, 0, 1);
-            break;
-        case 1:
-            out.position = float4(1, 1, 0, 1);
-            break;
-        case 2:
-            out.position = float4(-1, -1, 0, 1);
-            break;
-        case 3:
-            out.position = float4(1, -1, 0, 1);
-            break;
-    }
+    out.position = vertices[id];
 
     // NOTE: Iverting them on the CPU would save time in the GPU, but it's only 4 vertices (3 in
     // the future, so the cost of rebinding the inverse matrices is probably higher than doing it
