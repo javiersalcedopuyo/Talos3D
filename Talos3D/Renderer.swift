@@ -245,6 +245,8 @@ public class Renderer: NSObject, MTKViewDelegate
 
     func endFrame()
     {
+        self.currentlyBoundPipelineID = nil
+
         guard let cb = self.currentCommandBuffer else
         {
             SimpleLogs.WARNING("There's no command buffer in use. Did you forget to call beginFrame()?")
