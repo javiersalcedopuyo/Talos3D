@@ -429,15 +429,13 @@ public class Renderer: NSObject, MTKViewDelegate
                                         length: Matrix4x4.size(),
                                         index: LIGHT_MATRIX_INDEX)
 
-        // TODO: Don't reuse the skybox's model
-        for submesh in self.scene.skybox!.getMesh().submeshes
-        {
-            commandEncoder.drawIndexedPrimitives(type:                 submesh.primitiveType,
-                                                 indexCount:           submesh.indexCount,
-                                                 indexType:            submesh.indexType,
-                                                 indexBuffer:          submesh.indexBuffer.buffer,
-                                                 indexBufferOffset:    submesh.indexBuffer.offset)
-        }
+        // TODO: Use a big triangle instead of a quad
+        commandEncoder.drawIndexedPrimitives(
+             type:               .triangleStrip,
+             indexCount:         6,
+             indexType:          .uint16,
+             indexBuffer:        self.quadIndexBuffer,
+             indexBufferOffset:  0)
 
         // Skybox
         if let skybox = self.scene.skybox

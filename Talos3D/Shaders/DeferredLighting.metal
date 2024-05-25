@@ -20,34 +20,23 @@ struct VertexOut
     float4 ndc_position;
 };
 
+static constant float4 vertex_positions[4] = {
+    {-1, 1, 0, 1},
+    { 1, 1, 0, 1},
+    {-1,-1, 0, 1},
+    { 1,-1, 0, 1}};
+
 vertex
 VertexOut deferred_lighting_vertex_main(uint id [[ vertex_id ]])
 {
-    VertexOut o;
-
-    // TODO: Use math to avoid branching
-    switch (id)
-    {
-        default:
-        case 0:
-            o.position  = float4(-1, 1, 0, 1);
-            break;
-        case 1:
-            o.position  = float4(1, 1, 0, 1);
-            break;
-        case 2:
-            o.position  = float4(-1, -1, 0, 1);
-            break;
-        case 3:
-            o.position  = float4(1, -1, 0, 1);
-            break;
-    }
-
-    o.ndc_position = o.position;
-    return o;
+    return {
+        .position = vertex_positions[id],
+        .ndc_position = vertex_positions[id] };
 }
 
 // MARK: - Fragment
+using FragmentIn = VertexOut;
+
 struct DirectionalLight
 {
     float3 direction;
@@ -62,14 +51,15 @@ struct Matrices
 
 // TODO: Support multiple lights
 fragment
-float4 deferred_lighting_fragment_main(VertexOut frag [[ stage_in ]],
-                                       texture2d<float> g_buffer_0 [[ texture(ALBEDO_AND_METALLIC) ]],
-                                       texture2d<float> g_buffer_1 [[ texture(NORMAL_AND_ROUGHNESS) ]],
-                                       texture2d<float> g_buffer_2 [[ texture(DEPTH) ]],
-                                       texture2d<float> shadow_map [[ texture(SHADOW_MAP) ]],
-                                       constant Matrices& matrices [[ buffer(SCENE_MATRICES) ]],
-                                       constant DirectionalLight& light [[ buffer(LIGHTS) ]],
-                                       constant float4x4& light_matrix  [[ buffer(LIGHT_MATRIX) ]])
+float4 deferred_lighting_fragment_main(
+    FragmentIn                  frag            [[ stage_in ]],
+    texture2d<float>            g_buffer_0      [[ texture(ALBEDO_AND_METALLIC) ]],
+    texture2d<float>            g_buffer_1      [[ texture(NORMAL_AND_ROUGHNESS) ]],
+    texture2d<float>            g_buffer_2      [[ texture(DEPTH) ]],
+    texture2d<float>            shadow_map      [[ texture(SHADOW_MAP) ]],
+    constant Matrices&          matrices        [[ buffer(SCENE_MATRICES) ]],
+    constant DirectionalLight&  light           [[ buffer(LIGHTS) ]],
+    constant float4x4&          light_matrix    [[ buffer(LIGHT_MATRIX) ]])
 {
     // Read the G-Buffer
     auto fragment_coords = static_cast<uint2>(frag.position.xy);
