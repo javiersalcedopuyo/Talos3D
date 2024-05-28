@@ -301,12 +301,6 @@ public class Renderer: NSObject, MTKViewDelegate
 
     func renderGBuffer()
     {
-        if self.scene.objects.isEmpty
-        {
-            SimpleLogs.WARNING("Empty scene. Skipping pass. Is this intentional?")
-            return
-        }
-
         let view = self.scene.mainCamera.getView()
         let proj = self.scene.mainCamera.getProjection()
 
@@ -383,6 +377,8 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         commandEncoder.label = "Deferred lighting pass"
 
+        commandEncoder.setCullMode(.back)
+        
         // In the lighting stage we want to shade the fragments that have already been "touched",
         // while in the skybox draw call we'll shade the ones that haven't
         commandEncoder.setStencilReferenceValue(0)
@@ -558,6 +554,8 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         commandEncoder.label = "Gizmos"
 
+        commandEncoder.setCullMode(.none) // We want to still see the plane from bellow
+
         // The grid is just a normal plane and needs depth testing
         commandEncoder.setDepthStencilState(self.mainDepthStencilState)
 
@@ -692,6 +690,7 @@ public class Renderer: NSObject, MTKViewDelegate
         // Screen-space lighting
         // Only write to the fragments that have been already "touched" (reference will be 0)
         screenSpaceDSDesc.frontFaceStencil.stencilCompareFunction = .less
+        screenSpaceDSDesc.backFaceStencil.stencilCompareFunction = .less
         if let ds = device.makeDepthStencilState(descriptor: screenSpaceDSDesc)
         {
             self.screenSpaceLightingStencilState = ds
@@ -833,13 +832,12 @@ public class Renderer: NSObject, MTKViewDelegate
         }
 
         // TODO: Replace with a triangle
-        // SCREEN QUAD
         if let modelURL = Bundle.main.url(forResource: QUAD_MODEL_NAME,
                                           withExtension: OBJ_FILE_EXTENSION)
         {
             let model = Model(device: device,
                               url: modelURL,
-                              material: self.skyboxMaterial, // TODO: Skybox material
+                              material: self.skyboxMaterial,
                               label: "Screen Space Skybox",
                               culling: .back)
 
