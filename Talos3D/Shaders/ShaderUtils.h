@@ -14,6 +14,11 @@
 #include <metal_stdlib>
 using namespace metal;
 
+/// Modulo calculated as in GLSL
+template<typename T, typename U>
+constexpr auto mod(T x, U y) -> T { return x - y * floor( x / y ); }
+
+
 /// Calculates the inverse of the matrix using Gaussian elimination with partial pivoting.
 /// - Return:
 ///		- Inverse of the input matrix if it's not singular.
