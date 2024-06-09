@@ -17,6 +17,7 @@ let OBJECT_MATRICES_INDEX       = BufferIndices.OBJECT_MATRICES.rawValue
 let LIGHTS_BUFFER_INDEX         = BufferIndices.LIGHTS.rawValue
 let LIGHT_MATRIX_INDEX          = BufferIndices.LIGHT_MATRIX.rawValue
 let MATERIAL_PARAMS_INDEX       = BufferIndices.MATERIAL_PARAMS.rawValue
+let CAMERA_POSITION_INDEX       = BufferIndices.CAMERA_POSITION.rawValue
 
 let ALBEDO_MAP_INDEX            = TextureIndices.ALBEDO.rawValue
 let SHADOW_MAP_INDEX            = TextureIndices.SHADOW_MAP.rawValue
@@ -227,7 +228,7 @@ public class Renderer: NSObject, MTKViewDelegate
         self.renderShadowMap()
         self.renderGBuffer()
         self.applyDeferredLighting()
-        self.renderGizmos()
+        // TODO: self.renderGizmos()
 
         self.endFrame()
     }
@@ -363,11 +364,11 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         renderPassDesc.depthAttachment.texture          = self.depthStencil
         renderPassDesc.depthAttachment.loadAction       = .load
-        renderPassDesc.depthAttachment.storeAction      = .store
+        renderPassDesc.depthAttachment.storeAction      = .dontCare
 
         renderPassDesc.stencilAttachment.texture        = self.depthStencil
         renderPassDesc.stencilAttachment.loadAction     = .load
-        renderPassDesc.stencilAttachment.storeAction    = .store
+        renderPassDesc.stencilAttachment.storeAction    = .dontCare
 
         guard let commandEncoder = self.currentCommandBuffer?
                                        .makeRenderCommandEncoder(descriptor: renderPassDesc) else
@@ -375,7 +376,7 @@ public class Renderer: NSObject, MTKViewDelegate
             SimpleLogs.ERROR("Couldn't create a command encoder. Skipping pass.")
             return
         }
-        commandEncoder.label = "Deferred lighting pass"
+        commandEncoder.label = "Deferred lighting / composition"
 
         commandEncoder.setCullMode(.back)
         
@@ -404,6 +405,17 @@ public class Renderer: NSObject, MTKViewDelegate
         self.bind(texture: self.shadowMap,
                   at: BindingPoint(index: SHADOW_MAP_INDEX, stage: .Fragment),
                   inEncoder: commandEncoder)
+
+        commandEncoder.setVertexBytes(
+            self.scene.mainCamera.getView().asPackedArray()
+                + self.scene.mainCamera.getProjection().asPackedArray(),
+            length: Matrix4x4.size() * 2,
+            index: SCENE_MATRICES_INDEX)
+
+        commandEncoder.setVertexBytes(
+            self.scene.mainCamera.getPosition().asPackedArray(),
+            length: MemoryLayout<Vector3>.size,
+            index: CAMERA_POSITION_INDEX)
 
         // TODO: Invert the matrices
         commandEncoder.setFragmentBytes(self.scene.mainCamera.getView().asPackedArray() +
@@ -438,15 +450,28 @@ public class Renderer: NSObject, MTKViewDelegate
         {
             commandEncoder.setDepthStencilState(self.skyboxDepthStencilState)
 
-            commandEncoder.setVertexBytes(self.scene.mainCamera.getView().asPackedArray() +
-                                            self.scene.mainCamera.getProjection().asPackedArray(),
-                                          length: Matrix4x4.size() * 2,
-                                          index: SCENE_MATRICES_INDEX)
-
             encodeRenderCommand(encoder:    commandEncoder,
                                 object:     skybox,
                                 passType:   .ScreenSpace)
         }
+
+        // Grid plane
+        commandEncoder.setCullMode(.none) // We want to still see the plane from bellow
+
+        // The grid is just a normal plane and needs depth testing
+        commandEncoder.setDepthStencilState(self.mainDepthStencilState)
+
+        self.bind(
+            pipeline: self.pipelineManager.getOrCreateGridGizmoPipeline(),
+            inEncoder: commandEncoder)
+
+        // The vertex positions are hardcoded in the shader
+        commandEncoder.drawIndexedPrimitives(
+            type:               .triangleStrip,
+            indexCount:         6,
+            indexType:          .uint16,
+            indexBuffer:        self.quadIndexBuffer,
+            indexBufferOffset:  0)
 
         commandEncoder.endEncoding()
     }
@@ -531,56 +556,7 @@ public class Renderer: NSObject, MTKViewDelegate
     // MARK: - Private
     private func renderGizmos()
     {
-        guard let renderPassDesc = mView.currentRenderPassDescriptor else
-        {
-            SimpleLogs.ERROR("No render pass descriptor. Skipping pass.")
-            return
-        }
-        renderPassDesc.colorAttachments[0].loadAction   = .load
-
-        renderPassDesc.depthAttachment.texture          = self.depthStencil
-        renderPassDesc.depthAttachment.loadAction       = .load
-        renderPassDesc.depthAttachment.storeAction      = .dontCare
-
-        renderPassDesc.stencilAttachment.texture        = self.depthStencil
-        renderPassDesc.stencilAttachment.loadAction     = .load
-        renderPassDesc.stencilAttachment.storeAction    = .dontCare
-
-        guard let commandEncoder = self.currentCommandBuffer?
-                                       .makeRenderCommandEncoder(descriptor: renderPassDesc) else
-        {
-            SimpleLogs.ERROR("Couldn't create a command encoder. Skipping pass.")
-            return
-        }
-        commandEncoder.label = "Gizmos"
-
-        commandEncoder.setCullMode(.none) // We want to still see the plane from bellow
-
-        // The grid is just a normal plane and needs depth testing
-        commandEncoder.setDepthStencilState(self.mainDepthStencilState)
-
-        self.boundResources.removeAll()
-
-        commandEncoder.setVertexBytes(
-            self.scene.mainCamera.getView().asPackedArray()
-                + self.scene.mainCamera.getProjection().asPackedArray()
-                + self.scene.mainCamera.getPosition().asPackedArray(),
-            length: Matrix4x4.size() * 2 +  MemoryLayout<Vector3>.size,
-            index: SCENE_MATRICES_INDEX)
-
-        self.bind(
-            pipeline: self.pipelineManager.getOrCreateGridGizmoPipeline(),
-            inEncoder: commandEncoder)
-
-        // The vertex positions are hardcoded in the shader
-        commandEncoder.drawIndexedPrimitives(
-            type:               .triangleStrip,
-            indexCount:         6,
-            indexType:          .uint16,
-            indexBuffer:        self.quadIndexBuffer,
-            indexBufferOffset:  0)
-
-        commandEncoder.endEncoding()
+        SimpleLogs.UNIMPLEMENTED("")
     }
 
 

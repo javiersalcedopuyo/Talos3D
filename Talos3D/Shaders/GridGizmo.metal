@@ -18,7 +18,6 @@ struct SceneMatrices
 {
     float4x4 view;
     float4x4 proj;
-    float3 camera_pos;
 };
 
 
@@ -35,7 +34,7 @@ static constant auto grid_size = 100.0f;
 
 static constant auto cell_size = 1.0f;
 static constant auto half_cell_size = cell_size * 0.5;
-static constant auto cell_line_thickness = 0.01f;
+static constant auto cell_line_thickness = 0.005f;
 
 static constant auto subcell_size = 0.1f;
 static constant auto half_subcell_size = subcell_size * 0.5;
@@ -59,16 +58,17 @@ static constant float4 positions[4]{
 vertex
 auto grid_gizmo_vertex_main(
     uint id [[vertex_id]],
-    constant SceneMatrices& scene [[ buffer(SCENE_MATRICES) ]])
+    constant SceneMatrices& scene [[ buffer(SCENE_MATRICES) ]],
+    constant float3& camera_pos [[ buffer(CAMERA_POSITION) ]] )
 -> VertexOut
 {
     auto world_pos = positions[ id ];
     world_pos.xyz *= grid_size;
-    world_pos.xz += scene.camera_pos.xz; // Make the quad follow the camera so it *looks* infinite
+    world_pos.xz += camera_pos.xz; // Make the quad follow the camera so it *looks* infinite
 
     return {
         .position   = scene.proj * scene.view * world_pos,
-        .camera_pos = scene.camera_pos,
+        .camera_pos = camera_pos,
         .coords     = world_pos.xz };
 }
 

@@ -38,6 +38,7 @@ typedef NS_ENUM(NSInteger, BufferIndices)
     LIGHTS,
     LIGHT_MATRIX,
     MATERIAL_PARAMS,
+    CAMERA_POSITION,
 
     BUFFER_COUNT
 };
