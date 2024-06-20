@@ -10,13 +10,13 @@ import SimpleLogs
 class Camera: Mobile
 {
     // MARK: - public
-    public var moveSpeed:   Float
-    public var rotateSpeed: Float
+    public var moveSpeed:   Float // m/s
+    public var rotateSpeed: Float // radians/s
 
     public init()
     {
-        moveSpeed   = 0.01
-        rotateSpeed = 0.1
+        moveSpeed   = 1.0
+        rotateSpeed = SLA.TAU
 
         fovy        = SLA.deg2rad(45.0)
         aspectRatio = 1.0
@@ -39,10 +39,10 @@ class Camera: Mobile
     public func getPosition()   -> Vector3      { self.transform.position }
     public func getRotation()   -> Vector3      { self.transform.getEulerAngles() }
 
-    public func move(localDirection: Vector3)
+    public func move(localDirection: Vector3, deltaTime: TimeInterval)
     {
         let worldDirection = self.transform.getLocalToWorldMatrix() * Vector4(localDirection, 0)
-        self.transform.position += worldDirection.xyz() * self.moveSpeed
+        self.transform.position += worldDirection.xyz() * self.moveSpeed * Float(deltaTime)
         self.updateView()
     }
 
@@ -60,15 +60,21 @@ class Camera: Mobile
         self.updateView()
     }
 
-    public func rotateAround(localAxis: Axis, radians: Float)
+    public func rotateAround(localAxis: Axis, radians: Float, deltaTime: TimeInterval)
     {
-        self.transform.rotateAround(localAxis: localAxis, radians: radians)
+        self.transform.rotateAround(
+            localAxis:  localAxis,
+            radians:    radians * self.rotateSpeed * Float(deltaTime))
+
         self.updateView()
     }
 
-    public func rotateAround(worldAxis: Axis, radians: Float)
+    public func rotateAround(worldAxis: Axis, radians: Float, deltaTime: TimeInterval)
     {
-        self.transform.rotateAround(worldAxis: worldAxis, radians: radians)
+        self.transform.rotateAround(
+            worldAxis:  worldAxis,
+            radians:    radians * self.rotateSpeed * Float(deltaTime))
+
         self.updateView()
     }
 

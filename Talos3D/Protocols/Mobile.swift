@@ -13,5 +13,7 @@ protocol Mobile: Positionable
     var moveSpeed:   Float {get set}
     var rotateSpeed: Float {get set}
 
-    mutating func move(localDirection: Vector3)
+    mutating func move(localDirection: Vector3, deltaTime: TimeInterval)
+    mutating func rotateAround(localAxis: Axis, radians: Float, deltaTime: TimeInterval)
+    mutating func rotateAround(worldAxis: Axis, radians: Float, deltaTime: TimeInterval)
 }

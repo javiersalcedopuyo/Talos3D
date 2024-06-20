@@ -173,8 +173,15 @@ public class Renderer: NSObject, MTKViewDelegate
 
     public func onMouseDrag(deltaX: Float, deltaY: Float)
     {
-        self.scene.mainCamera.rotateAround(localAxis: .X, radians: deg2rad(deltaY))
-        self.scene.mainCamera.rotateAround(worldAxis: .Y, radians: deg2rad(deltaX))
+        self.scene.mainCamera.rotateAround(
+            localAxis:  .X,
+            radians:    deg2rad(deltaY),
+            deltaTime:  self.deltaTime)
+
+        self.scene.mainCamera.rotateAround(
+            worldAxis:  .Y,
+            radians:    deg2rad(deltaX),
+            deltaTime:  self.deltaTime)
     }
 
     public func onScroll(scroll: Float)
@@ -182,7 +189,7 @@ public class Renderer: NSObject, MTKViewDelegate
         let d = Vector3(x: 0, y: 0, z: scroll)
         self.scene
             .mainCamera
-            .move(localDirection: d)
+            .move(localDirection: d, deltaTime: self.deltaTime)
     }
 
     public func onKeyPress(keyCode: UInt16)
@@ -216,13 +223,17 @@ public class Renderer: NSObject, MTKViewDelegate
         }
         self.scene
             .mainCamera
-            .move(localDirection: d)
+            .move(localDirection: d, deltaTime: self.deltaTime)
     }
 
+    
     public func draw(in view: MTKView) { self.update() }
+
 
     func update()
     {
+        self.updateTime()
+
         self.beginFrame()
 
         self.renderShadowMap()
@@ -232,6 +243,15 @@ public class Renderer: NSObject, MTKViewDelegate
 
         self.endFrame()
     }
+
+
+    func updateTime()
+    {
+        let now = Date.now
+        self.deltaTime = now.timeIntervalSince( self.lastFrameStartTime )
+        self.lastFrameStartTime = now
+    }
+
 
     // TODO: Double/Triple buffer
     func beginFrame()
@@ -553,7 +573,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
     public var mView: MTKView
 
-    // MARK: - Private
+    // MARK: - Private methods
     private func renderGizmos()
     {
         SimpleLogs.UNIMPLEMENTED("")
@@ -1077,6 +1097,8 @@ public class Renderer: NSObject, MTKViewDelegate
         }
     }
 
+
+    // MARK: - Private Members
     private let commandQueue:  MTLCommandQueue
     private var currentCommandBuffer: MTLCommandBuffer?
 
@@ -1107,4 +1129,7 @@ public class Renderer: NSObject, MTKViewDelegate
     private var materials: [String: Material] = [:]
 
     private var boundResources: [BindingPoint: ObjectIdentifier] = [:] // TODO: Per encoder?
+
+    private var lastFrameStartTime = Date.now
+    private var deltaTime: TimeInterval = 0.0
 }
