@@ -28,12 +28,14 @@ class PipelineManager
             fatalError("☠️ Couldn't create the default shader library.")
         }
         self.shaderLibrary = lib
+        self.pipelines = Array(repeating: nil, count: PipelineIDs.count.rawValue)
     }
+
 
     /// Lazily gets the default pipeline
     public func getOrCreateDefaultPipeline() -> Pipeline
     {
-        if let pipeline = self.defaultPipeline
+        if let pipeline = self.pipelines[PipelineIDs.defaultPSO.rawValue]
         {
             return pipeline
         }
@@ -54,14 +56,14 @@ class PipelineManager
             fatalError("☠️ Couldn't create default pipeline state")
         }
 
-        self.defaultPipeline = pipeline
+        self.pipelines[PipelineIDs.defaultPSO.rawValue] = pipeline
         return pipeline
     }
 
     /// Lazily gets the main pipeline
     public func getOrCreateMainPipeline() -> Pipeline
     {
-        if let pipeline = self.mainPipeline
+        if let pipeline = self.pipelines[PipelineIDs.main.rawValue]
         {
             return pipeline
         }
@@ -82,14 +84,14 @@ class PipelineManager
             fatalError("☠️ Couldn't create main pipeline state")
         }
 
-        self.mainPipeline = pipeline
+        self.pipelines[PipelineIDs.main.rawValue] = pipeline
         return pipeline
     }
 
     /// Lazily gets the shadow pipeline
     public func getOrCreateShadowPipeline() -> Pipeline
     {
-        if let pipeline = self.shadowPipeline
+        if let pipeline = self.pipelines[PipelineIDs.shadow.rawValue]
         {
             return pipeline
         }
@@ -110,14 +112,14 @@ class PipelineManager
             fatalError("☠️ Couldn't create shadow pipeline state")
         }
 
-        self.shadowPipeline = pipeline
+        self.pipelines[PipelineIDs.shadow.rawValue] = pipeline
         return pipeline
     }
 
     /// Lazily gets the skybox pipeline
     public func getOrCreateSkyboxPipeline() -> Pipeline
     {
-        if let pipeline = self.skyboxPipeline
+        if let pipeline = self.pipelines[PipelineIDs.skybox.rawValue]
         {
             return pipeline
         }
@@ -139,14 +141,14 @@ class PipelineManager
             fatalError("☠️ Couldn't create the skybox pipeline state")
         }
 
-        self.skyboxPipeline = pipeline
+        self.pipelines[PipelineIDs.skybox.rawValue] = pipeline
         return pipeline
     }
 
     /// Lazily gets the G Buffer pipeline
     public func getOrCreateGBufferPipeline() -> Pipeline
     {
-        if let pipeline = self.gBufferPipeline
+        if let pipeline = self.pipelines[PipelineIDs.GBuffer.rawValue]
         {
             return pipeline
         }
@@ -170,14 +172,14 @@ class PipelineManager
             fatalError("☠️ Couldn't create the G-Buffer pipeline state")
         }
 
-        self.gBufferPipeline = pipeline
+        self.pipelines[PipelineIDs.GBuffer.rawValue] = pipeline
         return pipeline
     }
 
     /// Lazily gets the deferred lighting pipeline
     public func getOrCreateDeferredLightingPipeline() -> Pipeline
     {
-        if let pipeline = self.deferredLightingPipeline
+        if let pipeline = self.pipelines[PipelineIDs.deferredLighting.rawValue]
         {
             return pipeline
         }
@@ -198,14 +200,14 @@ class PipelineManager
             fatalError("☠️ Couldn't create main pipeline state")
         }
 
-        self.deferredLightingPipeline = pipeline
+        self.pipelines[PipelineIDs.deferredLighting.rawValue] = pipeline
         return pipeline
     }
 
     /// Lazily gets the grid gizmo's pipeline
     public func getOrCreateGridGizmoPipeline() -> Pipeline
     {
-        if let pipeline = self.gridGizmoPipeline
+        if let pipeline = self.pipelines[PipelineIDs.gridGizmo.rawValue]
         {
             return pipeline
         }
@@ -234,21 +236,36 @@ class PipelineManager
             fatalError("☠️ Couldn't create main pipeline state")
         }
 
-        self.gridGizmoPipeline = pipeline
+        self.pipelines[PipelineIDs.gridGizmo.rawValue] = pipeline
         return pipeline
     }
 
     // MARK: - Private
-    private let shaderLibrary:              MTLLibrary
-    private let device:                     MTLDevice
-    private let colorFormat:                MTLPixelFormat
+    private func resetAllPipelines()
+    {
+        for i in 0..<self.pipelines.count
+        {
+            self.pipelines[i] = nil
+        }
+    }
 
-    private var mainPipeline:               Pipeline? = nil
-    private var defaultPipeline:            Pipeline? = nil
-    private var shadowPipeline:             Pipeline? = nil
-    private var skyboxPipeline:             Pipeline? = nil
-    private var gBufferPipeline:            Pipeline? = nil
-    private var deferredLightingPipeline:   Pipeline? = nil
 
-    private var gridGizmoPipeline:          Pipeline? = nil
+    private var shaderLibrary: MTLLibrary
+    private let device:        MTLDevice
+    private let colorFormat:   MTLPixelFormat
+    private var pipelines:     [Pipeline?]
+
+
+    public enum PipelineIDs: Int
+    {
+        case defaultPSO = 0
+        case main
+        case shadow
+        case skybox
+        case GBuffer
+        case deferredLighting
+        case gridGizmo
+
+        case count
+    }
 }
