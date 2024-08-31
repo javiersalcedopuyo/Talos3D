@@ -4,14 +4,17 @@
 //
 //  Created by Javier Salcedo on 17/4/23.
 //
-
-import MetalKit
-
 // TODO: Throw an error instead of crashing if the pipelines fail to be created
 // TODO: Allow to create pipelines on demand / runtime
 // TODO: Use handles
 
-// MARK: Types
+
+// MARK: Imports
+import MetalKit
+import SimpleLogs
+
+
+// MARK: Constants and enums
 enum PipelineID: Int
 {
     case defaultPSO = 0
@@ -24,6 +27,10 @@ enum PipelineID: Int
 
     static var count: Int { Self.gridGizmo.rawValue + 1 }
 }
+
+
+// MARK: Types
+typealias Timestamp = TimeInterval
 
 class PipelineManager
 {
@@ -43,6 +50,12 @@ class PipelineManager
             fatalError("☠️ Couldn't create the default shader library.")
         }
         self.shaderLibrary = lib
+        self.lastShaderUpdate = Date.now.timeIntervalSince1970
+        self.recompiledShaderLibURL = FileManager
+            .default
+            .temporaryDirectory
+            .appending(path: "shaders/recompiled.metallib")
+
         self.pipelines = Array(repeating: nil, count: PipelineID.count)
     }
 
@@ -72,6 +85,44 @@ class PipelineManager
         }
         self.pipelines[id.rawValue] = pipeline
         return pipeline
+    }
+
+    /// Reloads the shader library if a newer binary is found in the expected path
+    /// - Returns:
+    ///     - Wether the library was reloaded or not (can be discarded)
+    @discardableResult
+    public func reloadShadersIfNecessary() -> Bool
+    {
+        let fm = FileManager.default
+        if !fm.fileExists( atPath: self.recompiledShaderLibURL.path() )
+        {
+            return false
+        }
+
+        do
+        {
+            let attributesDict = try fm.attributesOfItem( atPath: self.recompiledShaderLibURL.path() )
+            guard let lastModification = attributesDict[.modificationDate] as? NSDate else
+            {
+                ERROR("Couldn't obtain the shader's lib last modification date.")
+                return false
+            }
+
+            if lastModification.timeIntervalSince1970 <= self.lastShaderUpdate
+            {
+                // We're already using the latest lib
+                return false
+            }
+            self.shaderLibrary = try self.device.makeLibrary(URL: self.recompiledShaderLibURL)
+            self.lastShaderUpdate = lastModification.timeIntervalSince1970
+            self.resetAllPipelines() // TODO: Reset only the affected pipelines
+            return true
+        }
+        catch
+        {
+            ERROR("Failed reloading shaders: \(error)")
+            return false
+        }
     }
 
 
@@ -231,4 +282,7 @@ class PipelineManager
     private let device:        MTLDevice
     private let colorFormat:   MTLPixelFormat
     private var pipelines:     [Pipeline?]
+
+    private var lastShaderUpdate: Timestamp
+    private let recompiledShaderLibURL: URL
 }

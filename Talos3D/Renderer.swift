@@ -202,6 +202,13 @@ public class Renderer: NSObject, MTKViewDelegate
     {
         self.updateTime()
 
+        // TODO: Call this every second rather than every frame
+        if self.pipelineManager.reloadShadersIfNecessary()
+        {
+            // FIXME: This only seems to work once despite getting here every time
+            INFO("Shaders reloaded")
+        }
+
         self.beginFrame()
 
         self.renderShadowMap()
