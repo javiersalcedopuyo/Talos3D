@@ -11,26 +11,23 @@ import SimpleLogs
 
 public class Material : NSCopying
 {
-    init(pipeline pso: Pipeline, label name: String = "")
+    init(pipeline pso: PipelineID, label name: String = "")
     {
-        label    = name
-        pipeline = pso
-        params   = MaterialParams()
-        textures = []
-        samplers = []
+        self.label      = name
+        self.pipelineID = pso
+        self.params     = MaterialParams()
+        self.textures   = []
+        self.samplers   = []
     }
 
     public func copy(with zone: NSZone? = nil) -> Any
     {
-        let newMaterial = Material(pipeline: self.pipeline)
+        let newMaterial = Material(pipeline: self.pipelineID)
         newMaterial.textures = self.textures
         newMaterial.samplers = self.samplers
         newMaterial.params   = self.params
         return newMaterial
     }
-
-    func getVertexShader()   -> MTLFunction? { pipeline.descriptor.vertexFunction }
-    func getFragmentShader() -> MTLFunction? { pipeline.descriptor.fragmentFunction }
 
     // TODO: Rethink this
     func swapTexture(idx: Int, newTexture: TextureHandle)
@@ -44,7 +41,7 @@ public class Material : NSCopying
         self.textures[idx] = newTexture
     }
 
-    let pipeline: Pipeline
+    let pipelineID: PipelineID
     var params:   MaterialParams
     var textures: [TextureHandle]
     var samplers: [MTLSamplerState]

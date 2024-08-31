@@ -90,9 +90,8 @@ public class Renderer: NSObject, MTKViewDelegate
             generateMipmaps: true,
             bindingPoint: BindingPoint(index: ALBEDO_MAP_INDEX, stage: .Fragment) )
 
-        self.defaultMaterial = Material(pipeline: self.pipelineManager.getOrCreateDefaultPipeline())
-
-        self.skyboxMaterial  = Material(pipeline: self.pipelineManager.getOrCreateSkyboxPipeline())
+        self.defaultMaterial = Material(pipeline: .defaultPSO,  label: "Default Material")
+        self.skyboxMaterial  = Material(pipeline: .skybox,      label: "Skybox Material")
         self.skyboxMaterial.textures.append( self.skyboxTexHandle )
 
 
@@ -277,7 +276,7 @@ public class Renderer: NSObject, MTKViewDelegate
                                       index: SCENE_MATRICES_INDEX)
 
         // All objects in the shadow pass use the same PSO
-        self.bind(pipeline: self.pipelineManager.getOrCreateShadowPipeline(),
+        self.bind(pipeline: self.pipelineManager.getOrCreatePipeline(.shadow),
                   inEncoder: commandEncoder)
 
         for model in self.scene.objects
@@ -376,7 +375,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
         self.boundResources.removeAll()
 
-        self.bind(pipeline: self.pipelineManager.getOrCreateDeferredLightingPipeline(),
+        self.bind(pipeline: self.pipelineManager.getOrCreatePipeline(.deferredLighting),
                   inEncoder: commandEncoder)
 
         self.bind(texture: self.gBufferAlbedoAndMetallic,
@@ -451,7 +450,7 @@ public class Renderer: NSObject, MTKViewDelegate
         commandEncoder.setDepthStencilState(self.mainDepthStencilState)
 
         self.bind(
-            pipeline: self.pipelineManager.getOrCreateGridGizmoPipeline(),
+            pipeline: self.pipelineManager.getOrCreatePipeline(.gridGizmo),
             inEncoder: commandEncoder)
 
         // The vertex positions are hardcoded in the shader
@@ -680,9 +679,7 @@ public class Renderer: NSObject, MTKViewDelegate
 
     private func createMaterials(device: MTLDevice)
     {
-        let mainPipeline = self.pipelineManager.getOrCreateGBufferPipeline()
-
-        let material1 = Material(pipeline: mainPipeline, label: TEST_MATERIAL_NAME_1)
+        let material1 = Material(pipeline: .GBuffer, label: TEST_MATERIAL_NAME_1)
         material1.label = TEST_MATERIAL_NAME_1
         material1.textures.append( self.testTex1Handle )
 
@@ -729,10 +726,12 @@ public class Renderer: NSObject, MTKViewDelegate
         if let modelURL = Bundle.main.url(forResource: BUNNY_MODEL_NAME,
                                           withExtension: OBJ_FILE_EXTENSION)
         {
-            let model = Model(device: device,
-                              url: modelURL,
-                              material: self.materials[WHITE_MATERIAL_NAME] ?? self.defaultMaterial,
-                              label: "Stanford Bunny")
+            let model = Model(
+                device:             device,
+                url:                modelURL,
+                material:           self.materials[WHITE_MATERIAL_NAME] ?? self.defaultMaterial,
+                pipelineManager:    self.pipelineManager,
+                label:              "Stanford Bunny")
 
             let rotDegrees = SLA.rad2deg(0.5 * TAU)
             model.rotate(localEulerAngles: Vector3(x: 0, y: rotDegrees, z: 0))
@@ -750,11 +749,13 @@ public class Renderer: NSObject, MTKViewDelegate
         if let modelURL = Bundle.main.url(forResource: TEAPOT_MODEL_NAME,
                                           withExtension: OBJ_FILE_EXTENSION)
         {
-            let model = Model(device: device,
-                              url: modelURL,
-                              material: self.materials[TEST_MATERIAL_NAME_2] ?? self.defaultMaterial,
-                              label: "Utah Teapot",
-                              culling: .none)
+            let model = Model(
+                device:             device,
+                url:                modelURL,
+                material:           self.materials[TEST_MATERIAL_NAME_2] ?? self.defaultMaterial,
+                pipelineManager:    self.pipelineManager,
+                label:              "Utah Teapot",
+                culling:            .none)
 
             model.scale(by: 0.01)
             model.move(to: Vector3(x:0.15, y:0.075, z:0))
@@ -770,11 +771,13 @@ public class Renderer: NSObject, MTKViewDelegate
         if let modelURL = Bundle.main.url(forResource: QUAD_MODEL_NAME,
                                           withExtension: OBJ_FILE_EXTENSION)
         {
-            let model = Model(device: device,
-                              url: modelURL,
-                              material: self.materials[TEST_MATERIAL_NAME_1] ?? self.defaultMaterial,
-                              label: "Floor",
-                              culling: .none)
+            let model = Model(
+                device:             device,
+                url:                modelURL,
+                material:           self.materials[TEST_MATERIAL_NAME_1] ?? self.defaultMaterial,
+                pipelineManager:    self.pipelineManager,
+                label:              "Floor",
+                culling:            .none)
 
             scene.add(object: model)
         }
@@ -787,11 +790,13 @@ public class Renderer: NSObject, MTKViewDelegate
         if let modelURL = Bundle.main.url(forResource: QUAD_MODEL_NAME,
                                           withExtension: OBJ_FILE_EXTENSION)
         {
-            let model = Model(device: device,
-                              url: modelURL,
-                              material: self.skyboxMaterial,
-                              label: "Screen Space Skybox",
-                              culling: .back)
+            let model = Model(
+                device:             device,
+                url:                modelURL,
+                material:           self.skyboxMaterial,
+                pipelineManager:    self.pipelineManager,
+                label:              "Screen Space Skybox",
+                culling:            .back)
 
             self.scene.set(skybox: model)
         }
@@ -843,8 +848,9 @@ public class Renderer: NSObject, MTKViewDelegate
 
             // TODO: Sort the models by material
             let material = object.getMaterial()
-            assert(material.pipeline.type == .ForwardLighting)
-            self.bind(pipeline: material.pipeline, inEncoder: encoder)
+            let pipeline = self.pipelineManager.getOrCreatePipeline(material.pipelineID)
+            assert(pipeline.type == .ForwardLighting)
+            self.bind(pipeline: pipeline, inEncoder: encoder)
 
             encoder.setFrontFacing(object.getWinding())
 
@@ -886,8 +892,9 @@ public class Renderer: NSObject, MTKViewDelegate
             // is fixed.
             // It won't need the material parameters either because doesn't have a "real" material.
             let material = object.getMaterial()
-            assert(material.pipeline.type == .ScreenSpace)
-            self.bind(pipeline: material.pipeline, inEncoder: encoder)
+            let pipeline = self.pipelineManager.getOrCreatePipeline(material.pipelineID)
+            assert(pipeline.type == .ScreenSpace)
+            self.bind(pipeline: pipeline, inEncoder: encoder)
 
             // Set Textures
             for textureHandle in material.textures
@@ -922,8 +929,9 @@ public class Renderer: NSObject, MTKViewDelegate
 
             // TODO: Sort the models by material
             let material = object.getMaterial()
-            assert(material.pipeline.type == .GBuffer)
-            self.bind(pipeline: material.pipeline, inEncoder: encoder)
+            let pipeline = self.pipelineManager.getOrCreatePipeline(material.pipelineID)
+            assert(pipeline.type == .GBuffer)
+            self.bind(pipeline: pipeline, inEncoder: encoder)
 
             encoder.setFrontFacing(object.getWinding())
 

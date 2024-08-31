@@ -9,6 +9,21 @@ import MetalKit
 
 // TODO: Throw an error instead of crashing if the pipelines fail to be created
 // TODO: Allow to create pipelines on demand / runtime
+// TODO: Use handles
+
+// MARK: Types
+enum PipelineID: Int
+{
+    case defaultPSO = 0
+    case forwardLighting
+    case deferredLighting
+    case GBuffer
+    case shadow
+    case skybox
+    case gridGizmo
+
+    static var count: Int { Self.gridGizmo.rawValue + 1 }
+}
 
 class PipelineManager
 {
@@ -28,18 +43,89 @@ class PipelineManager
             fatalError("☠️ Couldn't create the default shader library.")
         }
         self.shaderLibrary = lib
-        self.pipelines = Array(repeating: nil, count: PipelineIDs.count.rawValue)
+        self.pipelines = Array(repeating: nil, count: PipelineID.count)
     }
 
 
-    /// Lazily gets the default pipeline
-    public func getOrCreateDefaultPipeline() -> Pipeline
+    /// Lazily gets the pipeline associated with the provided ID
+    /// - Parameters:
+    ///     - id
+    /// - Returns:
+    ///     - The associated pipeline. If it doesn't exist yet, it creates it first.
+    public func getOrCreatePipeline(_ id: PipelineID) -> Pipeline
     {
-        if let pipeline = self.pipelines[PipelineIDs.defaultPSO.rawValue]
+        if let pipeline = self.pipelines[id.rawValue]
         {
             return pipeline
         }
 
+        let passType = Self.getPassType( ofPipeline: id )
+        let desc = self.makeDescriptor( forPipeline: id )
+
+        guard let pipeline = Pipeline(
+            desc:   desc,
+            device: self.device,
+            type:   passType )
+        else
+        {
+            fatalError("☠️ Couldn't create \(desc.label ?? "_unnamed_")'s PSO")
+        }
+        self.pipelines[id.rawValue] = pipeline
+        return pipeline
+    }
+
+
+    // MARK: - Private methods
+    private func resetAllPipelines()
+    {
+        for i in 0..<self.pipelines.count
+        {
+            self.pipelines[i] = nil
+        }
+    }
+
+
+    private static func getPassType(ofPipeline id: PipelineID) -> PassType
+    {
+        switch id
+        {
+            case .shadow:
+                return .Shadows
+            case .skybox, .deferredLighting, .gridGizmo:
+                return .ScreenSpace
+            case .GBuffer:
+                return .GBuffer
+            case .defaultPSO, .forwardLighting:
+                return .ForwardLighting
+        }
+    }
+
+
+    private func makeDescriptor(forPipeline id: PipelineID) -> MTLRenderPipelineDescriptor
+    {
+        switch id
+        {
+            case .defaultPSO:
+                return self.makeDefaultDescriptor()
+            case .forwardLighting:
+                return self.makeForwardDescriptor()
+            case .deferredLighting:
+                return self.makeDeferredDescriptor()
+            case .GBuffer:
+                return self.makeGBufferDescriptor()
+            case .shadow:
+                return self.makeShadowDescriptor()
+            case .skybox:
+                return self.makeSkyboxDescriptor()
+            case .gridGizmo:
+                return self.makeGridGizmoDescriptor()
+        }
+    }
+
+    
+    // MARK: Descriptors' creation
+    private func makeDefaultDescriptor() -> MTLRenderPipelineDescriptor
+    {
         let desc = MTLRenderPipelineDescriptor()
         desc.label                            = "Default PSO"
         desc.vertexFunction                   = self.shaderLibrary.makeFunction(name: "default_vertex_main")
@@ -48,111 +134,37 @@ class PipelineManager
         desc.colorAttachments[0].pixelFormat  = self.colorFormat
         desc.depthAttachmentPixelFormat       = .depth32Float_stencil8
         desc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
-
-        guard let pipeline = Pipeline(desc: desc,
-                                      device: device,
-                                      type: .ForwardLighting) else
-        {
-            fatalError("☠️ Couldn't create default pipeline state")
-        }
-
-        self.pipelines[PipelineIDs.defaultPSO.rawValue] = pipeline
-        return pipeline
+        return desc
     }
 
-    /// Lazily gets the main pipeline
-    public func getOrCreateMainPipeline() -> Pipeline
+    private func makeForwardDescriptor() -> MTLRenderPipelineDescriptor
     {
-        if let pipeline = self.pipelines[PipelineIDs.main.rawValue]
-        {
-            return pipeline
-        }
-
         let desc = MTLRenderPipelineDescriptor()
-        desc.label                            = "Main PSO"
+        desc.label                            = "Forward PSO"
         desc.vertexFunction                   = self.shaderLibrary.makeFunction(name: "vertex_main")
         desc.fragmentFunction                 = self.shaderLibrary.makeFunction(name: "fragment_main")
         desc.vertexDescriptor                 = Model.getNewVertexDescriptor()
         desc.colorAttachments[0].pixelFormat  = self.colorFormat
         desc.depthAttachmentPixelFormat       = .depth32Float_stencil8
         desc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
-
-        guard let pipeline = Pipeline(desc: desc,
-                                      device: device,
-                                      type: .ForwardLighting) else
-        {
-            fatalError("☠️ Couldn't create main pipeline state")
-        }
-
-        self.pipelines[PipelineIDs.main.rawValue] = pipeline
-        return pipeline
+        return desc
     }
 
-    /// Lazily gets the shadow pipeline
-    public func getOrCreateShadowPipeline() -> Pipeline
+    private func makeDeferredDescriptor() -> MTLRenderPipelineDescriptor
     {
-        if let pipeline = self.pipelines[PipelineIDs.shadow.rawValue]
-        {
-            return pipeline
-        }
-
         let desc = MTLRenderPipelineDescriptor()
-        desc.label                            = "Shadow PSO"
-        desc.vertexFunction                   = self.shaderLibrary.makeFunction(name: "shadow_vertex_main")
-        desc.fragmentFunction                 = nil
-        desc.vertexDescriptor                 = Model.getNewVertexDescriptor()
-        desc.colorAttachments[0].pixelFormat  = .invalid
-        desc.depthAttachmentPixelFormat       = .depth16Unorm // TODO: Tie this to the shadow map
-        desc.stencilAttachmentPixelFormat     = .invalid
-
-        guard let pipeline = Pipeline(desc: desc,
-                                      device: device,
-                                      type: .Shadows) else
-        {
-            fatalError("☠️ Couldn't create shadow pipeline state")
-        }
-
-        self.pipelines[PipelineIDs.shadow.rawValue] = pipeline
-        return pipeline
-    }
-
-    /// Lazily gets the skybox pipeline
-    public func getOrCreateSkyboxPipeline() -> Pipeline
-    {
-        if let pipeline = self.pipelines[PipelineIDs.skybox.rawValue]
-        {
-            return pipeline
-        }
-
-        let desc = MTLRenderPipelineDescriptor()
-        desc.label                            = "Skybox PSO"
-        desc.vertexFunction                   = self.shaderLibrary.makeFunction(name: "skybox_vertex_main")
-        desc.fragmentFunction                 = self.shaderLibrary.makeFunction(name: "skybox_fragment_main")
+        desc.label                            = "Deferred PSO"
+        desc.vertexFunction                   = self.shaderLibrary.makeFunction(name: "deferred_lighting_vertex_main")
+        desc.fragmentFunction                 = self.shaderLibrary.makeFunction(name: "deferred_lighting_fragment_main")
         desc.vertexDescriptor                 = MTLVertexDescriptor() // Empty
         desc.colorAttachments[0].pixelFormat  = self.colorFormat
         desc.depthAttachmentPixelFormat       = .depth32Float_stencil8
         desc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
-
-        guard let pipeline = Pipeline(desc:   desc,
-                                      device: device,
-                                      type:   .ScreenSpace)
-        else
-        {
-            fatalError("☠️ Couldn't create the skybox pipeline state")
-        }
-
-        self.pipelines[PipelineIDs.skybox.rawValue] = pipeline
-        return pipeline
+        return desc
     }
 
-    /// Lazily gets the G Buffer pipeline
-    public func getOrCreateGBufferPipeline() -> Pipeline
+    private func makeGBufferDescriptor() -> MTLRenderPipelineDescriptor
     {
-        if let pipeline = self.pipelines[PipelineIDs.GBuffer.rawValue]
-        {
-            return pipeline
-        }
-
         let desc = MTLRenderPipelineDescriptor()
         desc.label                            = "G-Buffer PSO"
         desc.vertexFunction                   = self.shaderLibrary.makeFunction(name: "g_buffer_vertex_main")
@@ -163,55 +175,37 @@ class PipelineManager
         desc.colorAttachments[2].pixelFormat  = .r32Float   // Depth
         desc.depthAttachmentPixelFormat       = .depth32Float_stencil8
         desc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
-
-        guard let pipeline = Pipeline(desc:   desc,
-                                      device: device,
-                                      type:   .GBuffer)
-        else
-        {
-            fatalError("☠️ Couldn't create the G-Buffer pipeline state")
-        }
-
-        self.pipelines[PipelineIDs.GBuffer.rawValue] = pipeline
-        return pipeline
+        return desc
     }
 
-    /// Lazily gets the deferred lighting pipeline
-    public func getOrCreateDeferredLightingPipeline() -> Pipeline
+    private func makeShadowDescriptor() -> MTLRenderPipelineDescriptor
     {
-        if let pipeline = self.pipelines[PipelineIDs.deferredLighting.rawValue]
-        {
-            return pipeline
-        }
-
         let desc = MTLRenderPipelineDescriptor()
-        desc.label                            = "Deferred Lighting PSO"
-        desc.vertexFunction                   = self.shaderLibrary.makeFunction(name: "deferred_lighting_vertex_main")
-        desc.fragmentFunction                 = self.shaderLibrary.makeFunction(name: "deferred_lighting_fragment_main")
+        desc.label                            = "Shadow PSO"
+        desc.vertexFunction                   = self.shaderLibrary.makeFunction(name: "shadow_vertex_main")
+        desc.fragmentFunction                 = nil
+        desc.vertexDescriptor                 = Model.getNewVertexDescriptor()
+        desc.colorAttachments[0].pixelFormat  = .invalid
+        desc.depthAttachmentPixelFormat       = .depth16Unorm // TODO: Tie this to the shadow map
+        desc.stencilAttachmentPixelFormat     = .invalid
+        return desc
+    }
+
+    private func makeSkyboxDescriptor() -> MTLRenderPipelineDescriptor
+    {
+        let desc = MTLRenderPipelineDescriptor()
+        desc.label                            = "Skybox PSO"
+        desc.vertexFunction                   = self.shaderLibrary.makeFunction(name: "skybox_vertex_main")
+        desc.fragmentFunction                 = self.shaderLibrary.makeFunction(name: "skybox_fragment_main")
         desc.vertexDescriptor                 = MTLVertexDescriptor() // Empty
         desc.colorAttachments[0].pixelFormat  = self.colorFormat
         desc.depthAttachmentPixelFormat       = .depth32Float_stencil8
         desc.stencilAttachmentPixelFormat     = .depth32Float_stencil8
-
-        guard let pipeline = Pipeline(desc: desc,
-                                      device: device,
-                                      type: .ScreenSpace) else
-        {
-            fatalError("☠️ Couldn't create main pipeline state")
-        }
-
-        self.pipelines[PipelineIDs.deferredLighting.rawValue] = pipeline
-        return pipeline
+        return desc
     }
 
-    /// Lazily gets the grid gizmo's pipeline
-    public func getOrCreateGridGizmoPipeline() -> Pipeline
+    private func makeGridGizmoDescriptor() -> MTLRenderPipelineDescriptor
     {
-        if let pipeline = self.pipelines[PipelineIDs.gridGizmo.rawValue]
-        {
-            return pipeline
-        }
-
         let desc = MTLRenderPipelineDescriptor()
         desc.label                            = "Grid Gizmo PSO"
         desc.vertexFunction                   = self.shaderLibrary.makeFunction(name: "grid_gizmo_vertex_main")
@@ -228,44 +222,13 @@ class PipelineManager
         desc.colorAttachments[0].alphaBlendOperation            = .add
         desc.colorAttachments[0].sourceAlphaBlendFactor         = .sourceAlpha
         desc.colorAttachments[0].destinationAlphaBlendFactor    = .oneMinusSourceAlpha
-
-        guard let pipeline = Pipeline(desc: desc,
-                                      device: device,
-                                      type: .ScreenSpace) else
-        {
-            fatalError("☠️ Couldn't create main pipeline state")
-        }
-
-        self.pipelines[PipelineIDs.gridGizmo.rawValue] = pipeline
-        return pipeline
-    }
-
-    // MARK: - Private
-    private func resetAllPipelines()
-    {
-        for i in 0..<self.pipelines.count
-        {
-            self.pipelines[i] = nil
-        }
+        return desc
     }
 
 
+    // MARK: Private members
     private var shaderLibrary: MTLLibrary
     private let device:        MTLDevice
     private let colorFormat:   MTLPixelFormat
     private var pipelines:     [Pipeline?]
-
-
-    public enum PipelineIDs: Int
-    {
-        case defaultPSO = 0
-        case main
-        case shadow
-        case skybox
-        case GBuffer
-        case deferredLighting
-        case gridGizmo
-
-        case count
-    }
 }

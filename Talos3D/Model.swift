@@ -26,19 +26,24 @@ public class Model : Renderable
     /// - Parameters:
     ///     - device: Needed to load the meshes
     ///     - url: The URL of the model file
-    ///     - material
+    ///     - material:
+    ///     - pipelineManager:
     ///     - label: Optional. Empty by default.
     ///     - culling: Face culling mode. Assumes most models will be closed so it's BACK by default
     init(device: MTLDevice,
          url: URL,
          material mat: Material,
+         pipelineManager: PipelineManager,
          label name: String = "",
          culling: MTLCullMode = .back)
     {
         self.material = mat
         self.label = name
 
-        let vertexDesc = self.material.pipeline.descriptor.vertexDescriptor
+        let vertexDesc = pipelineManager
+            .getOrCreatePipeline( mat.pipelineID )
+            .descriptor
+            .vertexDescriptor
         if vertexDesc == nil
         {
             SimpleLogs.WARNING("Material with no vertex descriptor, model's default will be used instead.")
