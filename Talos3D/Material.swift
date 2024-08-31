@@ -33,7 +33,7 @@ public class Material : NSCopying
     func getFragmentShader() -> MTLFunction? { pipeline.descriptor.fragmentFunction }
 
     // TODO: Rethink this
-    func swapTexture(idx: Int, newTexture: Texture)
+    func swapTexture(idx: Int, newTexture: TextureHandle)
     {
         if idx >= self.textures.count
         {
@@ -46,7 +46,7 @@ public class Material : NSCopying
 
     let pipeline: Pipeline
     var params:   MaterialParams
-    var textures: [Texture]
+    var textures: [TextureHandle]
     var samplers: [MTLSamplerState]
     var label:     String
 }

@@ -75,24 +75,26 @@ public class Renderer: NSObject, MTKViewDelegate
                                                            device: device)
 
         self.pipelineManager = PipelineManager(view: mView)
+        self.textureManager  = TextureManager(device: device)
+
+        self.skyboxTexHandle = self.textureManager.loadTexture(
+            name: SKYBOX_TEXTURE_NAME_1,
+            generateMipmaps: true,
+            bindingPoint: BindingPoint(index: SKYBOX_INDEX, stage: .Fragment) )
+        self.testTex1Handle = self.textureManager.loadTexture(
+            name: TEST_TEXTURE_NAME_1,
+            generateMipmaps: true,
+            bindingPoint: BindingPoint(index: ALBEDO_MAP_INDEX, stage: .Fragment) )
+        self.testTex2Handle = self.textureManager.loadTexture(
+            name: TEST_TEXTURE_NAME_2,
+            generateMipmaps: true,
+            bindingPoint: BindingPoint(index: ALBEDO_MAP_INDEX, stage: .Fragment) )
 
         self.defaultMaterial = Material(pipeline: self.pipelineManager.getOrCreateDefaultPipeline())
-        self.skyboxMaterial  = Material(pipeline: self.pipelineManager.getOrCreateSkyboxPipeline())
-        if let tex = Self.loadTexture(name: SKYBOX_TEXTURE_NAME_1,
-                                      index: SKYBOX_INDEX,
-                                      device: device)
-        {
-            self.skyboxMaterial.textures.append(tex)
-        }
 
-        guard let dummy = Self.createMetalTexture(size: MTLSize(width: 1, height: 1, depth: 1),
-                                                  initialValue: 128,
-                                                  device: device)
-        else
-        {
-            fatalError("Failed to create the dummy texture.")
-        }
-        self.dummyTexture = dummy
+        self.skyboxMaterial  = Material(pipeline: self.pipelineManager.getOrCreateSkyboxPipeline())
+        self.skyboxMaterial.textures.append( self.skyboxTexHandle )
+
 
         // TODO: createGBuffer()
         let gBufferDesc = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba32Float,
@@ -129,39 +131,6 @@ public class Renderer: NSObject, MTKViewDelegate
         mView.delegate = self
     }
 
-    /// Creates a new Metal Texture with a given size and initial value
-    /// - Parameters:
-    ///     - size
-    ///     - initialValue: [0,255] Will be set for all channels of all texels
-    ///     - device: The device used to create the texture
-    /// - Returns:
-    ///     - MTLTexture: With RGBA8Unorm pixel format
-    private static func createMetalTexture(size:            MTLSize,
-                                           initialValue:    UInt8,
-                                           device:          MTLDevice)
-    -> MTLTexture?
-    {
-        let texDesc = MTLTextureDescriptor()
-        texDesc.width  = size.width
-        texDesc.height = size.height
-        texDesc.depth  = size.depth
-
-        guard let mtlTex = device.makeTexture(descriptor: texDesc) else
-        {
-            ERROR("Failed to create texture.")
-            return nil
-        }
-
-        let dataSize = 4 * size.width * size.height * size.depth
-        let data = Array(repeating: initialValue, count: dataSize)
-
-        mtlTex.replace(region:      MTLRegion(origin: MTLOrigin(x: 0, y: 0, z: 0), size: size),
-                       mipmapLevel: 0,
-                       withBytes:   data,
-                       bytesPerRow: dataSize)
-
-        return mtlTex
-    }
 
     public func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize)
     {
@@ -714,31 +683,18 @@ public class Renderer: NSObject, MTKViewDelegate
         let mainPipeline = self.pipelineManager.getOrCreateGBufferPipeline()
 
         let material1 = Material(pipeline: mainPipeline, label: TEST_MATERIAL_NAME_1)
-        if let tex = Self.loadTexture(name: TEST_TEXTURE_NAME_1,
-                                      index: ALBEDO_MAP_INDEX,
-                                      device: device)
-        {
-            material1.textures.append(tex)
-        }
+        material1.label = TEST_MATERIAL_NAME_1
+        material1.textures.append( self.testTex1Handle )
 
         let material2 = material1.copy() as! Material
         material2.label = TEST_MATERIAL_NAME_2
-        if let tex = Self.loadTexture(name: TEST_TEXTURE_NAME_2,
-                                      index: ALBEDO_MAP_INDEX,
-                                      device: device)
-        {
-            material2.swapTexture(idx: 0, newTexture: tex)
-        }
+        material2.textures.append( self.testTex2Handle )
         material2.params.setTint(Vector3(x:1, y:1, z:0))
         material2.params.setRoughness(0.15)
 
-        var whiteTex = Texture(mtlTexture: self.dummyTexture,
-                               label: "Dummy")
-        whiteTex.setIndex(0, stage: .Fragment)
-
         let material3 = material1.copy() as! Material
         material3.label = WHITE_MATERIAL_NAME
-        material3.swapTexture(idx: 0, newTexture: whiteTex)
+        material3.textures.append( DUMMY_TEXTURE_HANDLE )
 
         self.materials[TEST_MATERIAL_NAME_1] = material1
         self.materials[TEST_MATERIAL_NAME_2] = material2
@@ -845,34 +801,6 @@ public class Renderer: NSObject, MTKViewDelegate
         }
     }
 
-    static private func loadTexture(name: String, index: Int, device: MTLDevice) -> Texture?
-    {
-        // TODO: Async?
-        let textureLoader = MTKTextureLoader(device: device)
-
-        let textureLoaderOptions = [
-            MTKTextureLoader.Option.textureUsage: NSNumber(value: MTLTextureUsage.shaderRead.rawValue),
-            MTKTextureLoader.Option.textureStorageMode: NSNumber(value: MTLStorageMode.`private`.rawValue),
-            MTKTextureLoader.Option.generateMipmaps: true
-        ]
-
-        do
-        {
-            let mtlTex = try textureLoader.newTexture(name: name,
-                                                      scaleFactor: 1.0,
-                                                      bundle: nil,
-                                                      options: textureLoaderOptions)
-
-            var texture = Texture(mtlTexture: mtlTex, label: name)
-            texture.setIndex(index, stage: .Fragment)
-            return texture
-        }
-        catch
-        {
-            SimpleLogs.ERROR("Couldn't load texture \(name)")
-            return nil
-        }
-    }
 
     // TODO: Refactor or delete this whole thing
     /// Renders a model
@@ -925,8 +853,13 @@ public class Renderer: NSObject, MTKViewDelegate
                                      index: MATERIAL_PARAMS_INDEX)
 
             // Set Textures
-            for texture in material.textures
+            for textureHandle in material.textures
             {
+                guard let texture = self.textureManager.getTexture( textureHandle ) else
+                {
+                    ERROR( "Material \(material.label) has an invalid texture handle. No texture will be bound" )
+                    continue
+                }
                 if let idx = texture.getIndexAtStage(.Vertex)
                 {
                     self.bind(texture: texture.getResource() as! MTLTexture,
@@ -957,8 +890,14 @@ public class Renderer: NSObject, MTKViewDelegate
             self.bind(pipeline: material.pipeline, inEncoder: encoder)
 
             // Set Textures
-            for texture in material.textures
+            for textureHandle in material.textures
             {
+                guard let texture = self.textureManager.getTexture( textureHandle ) else
+                {
+                    ERROR( "Material \(material.label) has an invalid texture handle. No texture will be bound" )
+                    continue
+                }
+
                 if let idx = texture.getIndexAtStage(.Vertex)
                 {
                     self.bind(texture: texture.getResource() as! MTLTexture,
@@ -993,8 +932,14 @@ public class Renderer: NSObject, MTKViewDelegate
                                      index: MATERIAL_PARAMS_INDEX)
 
             // Set Textures
-            for texture in material.textures
+            for textureHandle in material.textures
             {
+                guard let texture = self.textureManager.getTexture( textureHandle ) else
+                {
+                    ERROR( "Material \(material.label) has an invalid texture handle. No texture will be bound" )
+                    continue
+                }
+
                 if let idx = texture.getIndexAtStage(.Fragment)
                 {
                     self.bind(texture: texture.getResource() as! MTLTexture,
@@ -1106,6 +1051,8 @@ public class Renderer: NSObject, MTKViewDelegate
     private let pipelineManager: PipelineManager
     private var currentlyBoundPipelineID: ObjectIdentifier? = nil // TODO: Per encoder
 
+    private let textureManager: TextureManager
+
     private var mainDepthStencilState:              MTLDepthStencilState!
     private var shadowDepthStencilState:            MTLDepthStencilState!
     private var screenSpaceLightingStencilState:    MTLDepthStencilState!
@@ -1113,7 +1060,10 @@ public class Renderer: NSObject, MTKViewDelegate
 
     private var shadowMap:    MTLTexture
     private var depthStencil: MTLTexture
-    private let dummyTexture: MTLTexture
+
+    private var skyboxTexHandle: TextureHandle
+    private var testTex1Handle:  TextureHandle
+    private var testTex2Handle:  TextureHandle
 
     // G-Buffer
     private let gBufferAlbedoAndMetallic: MTLTexture

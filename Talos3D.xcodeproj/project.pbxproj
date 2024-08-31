@@ -40,6 +40,7 @@
 		859CEA4E277E4D4F001D07B7 /* bunny.obj in Resources */ = {isa = PBXBuildFile; fileRef = 859CEA4D277E4B63001D07B7 /* bunny.obj */; };
 		85B0DC4F292442DD00E7E8F7 /* quad.obj in Resources */ = {isa = PBXBuildFile; fileRef = 85B0DC4E292442DD00E7E8F7 /* quad.obj */; };
 		85BD8DA229C779F700211FB2 /* Skybox.metal in Sources */ = {isa = PBXBuildFile; fileRef = 85D09E0329C3BD550006FB19 /* Skybox.metal */; };
+		85F2E1F02C8282CB0093C64D /* TextureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85F2E1EF2C8282CB0093C64D /* TextureManager.swift */; };
 		85FA396A2A33A2ED0005FE44 /* DeferredLighting.metal in Sources */ = {isa = PBXBuildFile; fileRef = 85FA39692A33A2ED0005FE44 /* DeferredLighting.metal */; };
 /* End PBXBuildFile section */
 
@@ -90,6 +91,7 @@
 		859CEA4D277E4B63001D07B7 /* bunny.obj */ = {isa = PBXFileReference; lastKnownFileType = text; path = bunny.obj; sourceTree = "<group>"; };
 		85B0DC4E292442DD00E7E8F7 /* quad.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = quad.obj; sourceTree = "<group>"; };
 		85D09E0329C3BD550006FB19 /* Skybox.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Skybox.metal; sourceTree = "<group>"; };
+		85F2E1EF2C8282CB0093C64D /* TextureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextureManager.swift; sourceTree = "<group>"; };
 		85FA39692A33A2ED0005FE44 /* DeferredLighting.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = DeferredLighting.metal; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -160,6 +162,7 @@
 				859CEA26277DE361001D07B7 /* AppDelegate.swift */,
 				859CEA28277DE361001D07B7 /* GameViewController.swift */,
 				8544819C29EDE12D009A2105 /* PipelineManager.swift */,
+				85F2E1EF2C8282CB0093C64D /* TextureManager.swift */,
 				859CEA2A277DE361001D07B7 /* Renderer.swift */,
 				853291D5278370CE00DE4B93 /* Camera.swift */,
 				85308EA728BD0AA2002D510F /* Scene.swift */,
@@ -345,6 +348,7 @@
 				858CFEBB28C54E140095EB29 /* DefaultShaders.metal in Sources */,
 				85362B4529466534001A2E6C /* ShadowPass.metal in Sources */,
 				859CEA2B277DE361001D07B7 /* Renderer.swift in Sources */,
+				85F2E1F02C8282CB0093C64D /* TextureManager.swift in Sources */,
 				85607EBB27C2DE9800586527 /* Light.swift in Sources */,
 				85FA396A2A33A2ED0005FE44 /* DeferredLighting.metal in Sources */,
 				854F396B2BE41ACA0062E1D4 /* GridGizmo.metal in Sources */,
@@ -559,7 +563,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.5;
 				MARKETING_VERSION = 1.0;
 				MTL_COMPILER_FLAGS = "-fpreserve-invariance";
-				PRODUCT_BUNDLE_IDENTIFIER = JavierSalcedo.Talos3D;
+				PRODUCT_BUNDLE_IDENTIFIER = Talos3D;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "$(TARGET_NAME)/Shaders/ShadersCommon.h";
@@ -589,7 +593,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.5;
 				MARKETING_VERSION = 1.0;
 				MTL_COMPILER_FLAGS = "-fpreserve-invariance";
-				PRODUCT_BUNDLE_IDENTIFIER = JavierSalcedo.Talos3D;
+				PRODUCT_BUNDLE_IDENTIFIER = Talos3D;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "$(TARGET_NAME)/Shaders/ShadersCommon.h";
