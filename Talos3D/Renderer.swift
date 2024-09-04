@@ -5,10 +5,12 @@
 //  Created by Javier Salcedo on 30/12/21.
 //
 import Foundation
+import Carbon.HIToolbox.Events
 import MetalKit
 
 import SLA
 import SimpleLogs
+
 
 // TODO: Move to a header file in common with the shaders?
 let VERTEX_BUFFER_INDEX         = BufferIndices.VERTICES.rawValue
@@ -162,36 +164,22 @@ public class Renderer: NSObject, MTKViewDelegate
 
     public func onKeyPress(keyCode: UInt16)
     {
-        var d = Vector3.zero()
-        switch keyCode
+        var cam = self.scene.mainCamera
+        let dt = self.deltaTime
+        switch Int(keyCode)
         {
-            case 0:
-//                SimpleLogs.INFO("A")
-                d.x = -1
-                break
+            case kVK_ANSI_W: cam.move(localDirection: Vector3(x: 0,y: 0,z: 1), deltaTime: dt) ;break
+            case kVK_ANSI_A: cam.move(localDirection: Vector3(x:-1,y: 0,z: 0), deltaTime: dt) ;break
+            case kVK_ANSI_S: cam.move(localDirection: Vector3(x: 0,y: 0,z:-1), deltaTime: dt) ;break
+            case kVK_ANSI_D: cam.move(localDirection: Vector3(x: 1,y: 0,z: 0), deltaTime: dt) ;break
 
-            case 0x02:
-//                SimpleLogs.INFO("D")
-                d.x = 1
-                break
-
-            case 0x01:
-//                SimpleLogs.INFO("S")
-                d.z = -1
-                break
-
-            case 0x0D:
-//                SimpleLogs.INFO("W")
-                d.z = 1
-                break
+            case kVK_ANSI_Q: cam.move(worldDirection: Vector3(x: 0,y:-1,z: 0), deltaTime: dt); break
+            case kVK_ANSI_E: cam.move(worldDirection: Vector3(x: 0,y: 1,z: 0), deltaTime: dt); break
 
             default:
 //                SimpleLogs.INFO("Unsupported key")
                 break
         }
-        self.scene
-            .mainCamera
-            .move(localDirection: d, deltaTime: self.deltaTime)
     }
 
     

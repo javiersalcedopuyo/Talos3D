@@ -42,7 +42,12 @@ class Camera: Mobile
     public func move(localDirection: Vector3, deltaTime: TimeInterval)
     {
         let worldDirection = self.transform.getLocalToWorldMatrix() * Vector4(localDirection, 0)
-        self.transform.position += worldDirection.xyz() * self.moveSpeed * Float(deltaTime)
+        self.move(worldDirection: worldDirection.xyz(), deltaTime: deltaTime)
+    }
+
+    public func move(worldDirection: Vector3, deltaTime: TimeInterval)
+    {
+        self.transform.position += worldDirection * self.moveSpeed * Float(deltaTime)
         self.updateView()
     }
 
